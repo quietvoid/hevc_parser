@@ -35,16 +35,19 @@ impl HevcParser {
         // Assuming [0, 0, 0, 1] header
         // Offset is at first element
         let pos = offset + 3;
-        let max_size = if size > MAX_PARSE_SIZE {
-            MAX_PARSE_SIZE
+
+        let end = if size > MAX_PARSE_SIZE {
+            pos + MAX_PARSE_SIZE
+        } else if pos + size >= data.len() {
+            offset + size
         } else {
-            size
+            pos + size
         };
 
         nal.start = pos;
-        nal.end = pos + size;
+        nal.end = end;
 
-        let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..pos + max_size]);
+        let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..end]);
         self.reader = BitVecReader::new(bytes);
 
         self.parse_nal_header(&mut nal);
@@ -124,6 +127,8 @@ impl HevcParser {
             &mut self.poc,
         );
         let id = Some(slice.id);
+
+        println!("{:#?}", slice);
 
         self.slices.push(slice);
 
