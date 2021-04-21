@@ -4,16 +4,14 @@ use super::scaling_list_data::ScalingListData;
 use super::short_term_rps::ShortTermRPS;
 use super::vui_parameters::VuiParameters;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct SPSNal {
-    pub nal_index: usize,
-
-    vps_id: u8,
+    pub(crate) vps_id: u8,
     max_sub_layers: u8,
     temporal_id_nesting_flag: bool,
 
     ptl: ProfileTierLevel,
-    sps_id: u64,
+    pub(crate) sps_id: u64,
     chroma_format_idc: u64,
     separate_colour_plane_flag: bool,
     width: u64,

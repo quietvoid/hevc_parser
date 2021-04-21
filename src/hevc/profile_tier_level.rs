@@ -1,6 +1,6 @@
 use super::BitVecReader;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct ProfileTierLevel {
     pub general_profile_space: u8,
     pub general_tier_flag: bool,

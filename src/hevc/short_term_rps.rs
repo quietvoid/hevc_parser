@@ -1,7 +1,7 @@
 use super::BitVecReader;
 use super::sps::SPSNal;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct ShortTermRPS {
     inter_ref_pic_set_prediction_flag: bool,
     delta_idx: u64,

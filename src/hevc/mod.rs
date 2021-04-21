@@ -48,4 +48,6 @@ pub struct NalUnit {
     pub nal_type: u8,
     pub nuh_layer_id: u8,
     pub temporal_id: u8,
+
+    pub id: Option<usize>,
 }

@@ -2,11 +2,9 @@ use super::BitVecReader;
 use super::hrd_parameters::HrdParameters;
 use super::profile_tier_level::ProfileTierLevel;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 pub struct VPSNal {
-    pub nal_index: usize,
-
-    vps_video_parameter_set_id: u8,
+    pub(crate) vps_id: u8,
     vps_max_layers: u8,
     vps_max_sub_layers: u8,
     vps_temporal_id_nesting_flag: bool,
@@ -29,7 +27,7 @@ impl VPSNal {
     pub fn parse(bs: &mut BitVecReader) -> VPSNal {
         let mut vps = VPSNal::default();
 
-        vps.vps_video_parameter_set_id = bs.get_n(4);
+        vps.vps_id = bs.get_n(4);
         
         // vps_reserved_three_2bits
         assert!(bs.get_n::<u8>(2) == 3);

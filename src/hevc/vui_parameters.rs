@@ -2,7 +2,7 @@ use super::BitVecReader;
 
 use super::hrd_parameters::HrdParameters;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct VuiParameters {
     sar_present: bool,
     sar_idx: u8,

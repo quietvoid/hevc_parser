@@ -6,4 +6,4 @@ edition = "2018"
 license = "MIT"
 
 [dependencies]
-bitvec_helpers = "0.1.0"
+bitvec_helpers = { path = "../bitvec_helpers" }

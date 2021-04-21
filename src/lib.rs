@@ -10,6 +10,9 @@ use pps::PPSNal;
 
 use utils::clear_start_code_emulation_prevention_3_byte;
 
+// We don't want to parse large slices because the memory is copied
+const MAX_PARSE_SIZE: usize = 2048;
+
 #[derive(Default)]
 pub struct HevcParser {
     nals: Vec<NalUnit>,
@@ -20,14 +23,12 @@ pub struct HevcParser {
     reader: BitVecReader,
 }
 
-// We don't want to parse large slices because the memory is copied
-const MAX_PARSE_SIZE: usize = 2048;
-
 impl HevcParser {
     pub fn parse_nal(&mut self, data: &[u8], offset: usize, size: usize) -> NalUnit {
         let mut nal = NalUnit::default();
 
-        // Assuming [0, 0, 1] header
+        // Assuming [0, 0, 0, 1] header
+        // Offset is at first element
         let pos = offset + 3;
         let max_size = if size > MAX_PARSE_SIZE {
             MAX_PARSE_SIZE
@@ -49,7 +50,8 @@ impl HevcParser {
             return nal;
         }
 
-        match nal.nal_type {
+        // ID by type
+        nal.id = match nal.nal_type {
             NAL_VPS => self.parse_vps(),
             NAL_SPS => self.parse_sps(),
             NAL_PPS => self.parse_pps(),
@@ -58,15 +60,15 @@ impl HevcParser {
             NAL_STSA_N | NAL_STSA_R | NAL_BLA_W_LP | NAL_BLA_W_RADL |
             NAL_BLA_N_LP | NAL_IDR_W_RADL | NAL_IDR_N_LP | NAL_CRA_NUT |
             NAL_RADL_N | NAL_RADL_R | NAL_RASL_N | NAL_RASL_R => {
-                self.parse_slice();
+                self.parse_slice()
             },
-            _ => (),
+            _ => None,
         };
 
         nal
     }
 
-    pub fn parse_nal_header(&mut self, nal: &mut NalUnit) {
+    fn parse_nal_header(&mut self, nal: &mut NalUnit) {
         // forbidden_zero_bit
         self.reader.get();
 
@@ -75,27 +77,82 @@ impl HevcParser {
         nal.temporal_id = self.reader.get_n::<u8>(3) - 1;
     }
     
-    pub fn parse_vps(&mut self) {
-        let mut vps = VPSNal::parse(&mut self.reader);
-        vps.nal_index = self.nals.len() - 1;
+    fn parse_vps(&mut self) -> Option<usize> {
+        let vps = VPSNal::parse(&mut self.reader);
+        let id = Some(vps.vps_id as usize);
+
+        self.remove_vps(&vps);
 
         self.vps.push(vps);
+
+        id
     }
     
-    pub fn parse_sps(&mut self) {
-        let mut sps = SPSNal::parse(&mut self.reader);
-        sps.nal_index = self.nals.len() - 1;
+    fn parse_sps(&mut self) -> Option<usize> {
+        let sps = SPSNal::parse(&mut self.reader);
+        let id = Some(sps.sps_id as usize);
 
-        println!("{:#?}", sps);
+        self.remove_sps(&sps);
 
         self.sps.push(sps);
+
+        id
     }
 
-    pub fn parse_pps(&mut self) {
-        let mut pps = PPSNal::parse(&mut self.reader);
+    fn parse_pps(&mut self) -> Option<usize> {
+        let pps = PPSNal::parse(&mut self.reader, &self.sps);
+        let id = Some(pps.pps_id as usize);
+
+        self.remove_pps(&pps);
+
+        self.pps.push(pps);
+
+        id
     }
 
-    pub fn parse_slice(&mut self) {
+    fn parse_slice(&mut self) -> Option<usize> {
+        let id = Some(0);
         
+        id
+    }
+
+    fn remove_vps(&mut self, vps: &VPSNal) {
+        let id = vps.vps_id as usize;
+
+        if let Some(existing_vps) = self.vps.get(id) {
+            if existing_vps == vps {
+                self.vps.remove(id);
+
+                let sps_to_remove: Vec<SPSNal> = self.sps.clone()
+                    .into_iter()
+                    .filter(|sps| sps.vps_id == vps.vps_id)
+                    .collect();
+                
+                sps_to_remove.iter()
+                    .for_each(|sps| self.remove_sps(sps));
+            }
+        }
+    }
+
+    fn remove_sps(&mut self, sps: &SPSNal) {
+        let id = sps.sps_id as usize;
+
+        if let Some(existing_sps) = self.sps.get(id) {
+            if existing_sps == sps {
+                self.sps.remove(id);
+
+                // Remove all dependent pps
+                self.pps.retain(|pps| pps.sps_id != sps.sps_id);
+            }
+        }
+    }
+
+    fn remove_pps(&mut self, pps: &PPSNal) {
+        // Remove if same id
+        if let Some(existing_pps) = self.pps.get(pps.pps_id as usize) {
+            if existing_pps == pps {
+                self.pps.remove(pps.pps_id as usize);
+            }
+        }
     }
 }
