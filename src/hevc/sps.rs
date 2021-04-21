@@ -1,11 +1,11 @@
-use super::BitVecReader;
 use super::profile_tier_level::ProfileTierLevel;
 use super::scaling_list_data::ScalingListData;
 use super::short_term_rps::ShortTermRPS;
 use super::vui_parameters::VuiParameters;
+use super::BitVecReader;
 
 #[derive(Default, Debug, PartialEq, Clone)]
-pub struct SPSNal {
+pub struct SPSNAL {
     pub(crate) vps_id: u8,
     max_sub_layers: u8,
     temporal_id_nesting_flag: bool,
@@ -13,7 +13,7 @@ pub struct SPSNal {
     ptl: ProfileTierLevel,
     pub(crate) sps_id: u64,
     chroma_format_idc: u64,
-    separate_colour_plane_flag: bool,
+    pub(crate) separate_colour_plane_flag: bool,
     width: u64,
     height: u64,
 
@@ -22,10 +22,10 @@ pub struct SPSNal {
     conf_win_right_offset: u64,
     conf_win_top_offset: u64,
     conf_win_bottom_offset: u64,
-    
+
     bit_depth: u64,
     bit_depth_chroma: u64,
-    log2_max_poc_lsb: u64,
+    pub(crate) log2_max_poc_lsb: u64,
     sublayer_ordering_info: bool,
     max_dec_pic_buffering: Vec<u64>,
     num_reorder_pics: Vec<u64>,
@@ -66,11 +66,25 @@ pub struct SPSNal {
     vui_parameters: VuiParameters,
 
     sps_extension_flag: bool,
+
+    // Computed values
+    pub(crate) log2_ctb_size: u64,
+    pub(crate) log2_min_pu_size: u64,
+    pub(crate) ctb_width: u64,
+    pub(crate) ctb_height: u64,
+    pub(crate) ctb_size: u64,
+    pub(crate) min_cb_width: u64,
+    pub(crate) min_cb_height: u64,
+    pub(crate) min_tb_width: u64,
+    pub(crate) min_tb_height: u64,
+    pub(crate) min_pu_width: u64,
+    pub(crate) min_pu_height: u64,
+    pub(crate) tb_mask: u64,
 }
 
-impl SPSNal {
-    pub fn parse(bs: &mut BitVecReader) -> SPSNal {
-        let mut sps = SPSNal::default();
+impl SPSNAL {
+    pub fn parse(bs: &mut BitVecReader) -> SPSNAL {
+        let mut sps = SPSNAL::default();
 
         sps.vps_id = bs.get_n(4);
         sps.max_sub_layers = bs.get_n::<u8>(3) + 1;
@@ -119,7 +133,7 @@ impl SPSNal {
             if max_latency_increase > 0 {
                 max_latency_increase -= 1;
             }
-        
+
             sps.max_latency_increase.push(max_latency_increase);
         }
 
@@ -137,7 +151,7 @@ impl SPSNal {
             sps.scaling_list_data_present_flag = bs.get();
 
             if sps.scaling_list_data_present_flag {
-                sps.scaling_list_data = ScalingListData::parse(bs);   
+                sps.scaling_list_data = ScalingListData::parse(bs);
             }
         }
 
@@ -166,7 +180,8 @@ impl SPSNal {
             sps.num_long_term_ref_pics_sps = bs.get_ue();
 
             for _ in 0..sps.num_long_term_ref_pics_sps {
-                sps.lt_ref_pic_poc_lsb_sps.push(bs.get_n(sps.log2_max_poc_lsb as usize));
+                sps.lt_ref_pic_poc_lsb_sps
+                    .push(bs.get_n(sps.log2_max_poc_lsb as usize));
                 sps.used_by_curr_pic_lt_sps_flag.push(bs.get());
             }
         }
@@ -181,6 +196,22 @@ impl SPSNal {
         }
 
         sps.sps_extension_flag = bs.get();
+
+        // Computed values
+        sps.log2_ctb_size = sps.log2_min_cb_size + sps.log2_diff_max_min_coding_block_size;
+        sps.log2_min_pu_size = sps.log2_min_cb_size - 1;
+
+        sps.ctb_width = (sps.width + (1 << sps.log2_ctb_size) - 1) >> sps.log2_ctb_size;
+        sps.ctb_height = (sps.height + (1 << sps.log2_ctb_size) - 1) >> sps.log2_ctb_size;
+        sps.ctb_size = sps.ctb_width * sps.ctb_height;
+
+        sps.min_cb_width = sps.width >> sps.log2_min_cb_size;
+        sps.min_cb_height = sps.height >> sps.log2_min_cb_size;
+        sps.min_tb_width = sps.width >> sps.log2_min_tb_size;
+        sps.min_tb_height = sps.height >> sps.log2_min_tb_size;
+        sps.min_pu_width = sps.width >> sps.log2_min_pu_size;
+        sps.min_pu_height = sps.height >> sps.log2_min_pu_size;
+        sps.tb_mask = (1 << (sps.log2_ctb_size - sps.log2_min_tb_size)) - 1;
 
         sps
     }

@@ -50,12 +50,12 @@ impl ProfileTierLevel {
         }
 
         if vps_max_sub_layers_minus1 > 0 {
-            for _ in vps_max_sub_layers_minus1 .. 8 {
+            for _ in vps_max_sub_layers_minus1..8 {
                 bs.skip_n(2);
             }
         }
 
-        for i in 0..vps_max_sub_layers_minus1 as usize{
+        for i in 0..vps_max_sub_layers_minus1 as usize {
             self.sub_layer_profile_space.push(bs.get_n(2));
             self.sub_layer_tier_flag.push(bs.get());
             self.sub_layer_profile_idc.push(bs.get_n(5));

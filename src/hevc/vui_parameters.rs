@@ -43,7 +43,7 @@ pub struct VuiParameters {
     tiles_fixed_structure_flag: bool,
     motion_vectors_over_pic_boundaries_flag: bool,
     restricted_ref_pic_lists_flag: bool,
-    
+
     min_spatial_segmentation_idc: u64,
     max_bytes_per_pic_denom: u64,
     max_bits_per_min_cu_denom: u64,
@@ -56,7 +56,7 @@ impl VuiParameters {
         let mut vui = VuiParameters::default();
 
         vui.sar_present = bs.get();
-        
+
         if vui.sar_present {
             vui.sar_idx = bs.get_n(8);
 

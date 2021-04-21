@@ -1,12 +1,12 @@
-use super::{BitVecReader, scaling_list_data::ScalingListData, sps::SPSNal};
+use super::{scaling_list_data::ScalingListData, sps::SPSNAL, BitVecReader};
 
 #[derive(Default, Debug, PartialEq)]
-pub struct PPSNal {
+pub struct PPSNAL {
     pub(crate) pps_id: u64,
     pub(crate) sps_id: u64,
-    dependent_slice_segments_enabled_flag: bool,
-    output_flag_present_flag: bool,
-    num_extra_slice_header_bits: u8,
+    pub(crate) dependent_slice_segments_enabled_flag: bool,
+    pub(crate) output_flag_present_flag: bool,
+    pub(crate) num_extra_slice_header_bits: u8,
     sign_data_hiding_flag: bool,
     cabac_init_present_flag: bool,
     num_ref_idx_l0_default_active: u64,
@@ -42,16 +42,16 @@ pub struct PPSNal {
 
     scaling_list_data_present_flag: bool,
     scaling_list_data: ScalingListData,
-    
+
     lists_modification_present_flag: bool,
     log2_parallel_merge_level: u64,
     slice_header_extension_present_flag: bool,
     pps_extension_present_flag: bool,
 }
 
-impl PPSNal {
-    pub fn parse(bs: &mut BitVecReader, sps_list: &Vec<SPSNal>) -> PPSNal {
-        let mut pps = PPSNal::default();
+impl PPSNAL {
+    pub fn parse(bs: &mut BitVecReader, sps_list: &Vec<SPSNAL>) -> PPSNAL {
+        let mut pps = PPSNAL::default();
 
         pps.pps_id = bs.get_ue();
         pps.sps_id = bs.get_ue();

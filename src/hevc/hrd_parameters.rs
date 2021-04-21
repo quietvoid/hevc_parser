@@ -1,12 +1,9 @@
 use super::BitVecReader;
 
 #[derive(Default)]
-pub struct HrdParameters {
-}
+pub struct HrdParameters {}
 
-pub struct SubLayerHrdParameter {
-    
-}
+pub struct SubLayerHrdParameter {}
 
 impl HrdParameters {
     pub fn parse(bs: &mut BitVecReader, common_inf_present: bool, vps_max_sub_layers: u8) {

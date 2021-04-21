@@ -1,5 +1,5 @@
+use super::sps::SPSNAL;
 use super::BitVecReader;
-use super::sps::SPSNal;
 
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct ShortTermRPS {
@@ -20,7 +20,13 @@ pub struct ShortTermRPS {
 }
 
 impl ShortTermRPS {
-    pub fn parse(bs: &mut BitVecReader, sps: &SPSNal, st_rps_idx: usize, nb_st_rps: u64, is_slice_header: bool) -> ShortTermRPS {
+    pub fn parse(
+        bs: &mut BitVecReader,
+        sps: &SPSNAL,
+        st_rps_idx: usize,
+        nb_st_rps: u64,
+        is_slice_header: bool,
+    ) -> ShortTermRPS {
         let mut rps = ShortTermRPS::default();
 
         if st_rps_idx > 0 && nb_st_rps > 0 {
@@ -69,7 +75,7 @@ impl ShortTermRPS {
                     rps.delta_poc_s0.push(bs.get_ue() + 1);
                     rps.used_by_curr_pic_s0_flags.push(bs.get());
                 }
-    
+
                 for _ in 0..rps.num_positive_pics {
                     rps.delta_poc_s1.push(bs.get_ue() + 1);
                     rps.used_by_curr_pic_s1_flags.push(bs.get());
