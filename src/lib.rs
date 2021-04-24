@@ -42,11 +42,9 @@ impl HevcParser {
         let pos = offset + 3;
 
         let end = if size > MAX_PARSE_SIZE {
-            pos + MAX_PARSE_SIZE
-        } else if pos + size >= data.len() {
-            offset + size
+            offset + MAX_PARSE_SIZE
         } else {
-            pos + size
+            offset + size
         };
 
         nal.start = pos;
@@ -75,18 +73,17 @@ impl HevcParser {
                 self.current_frame.nals.push(nal.clone());
                 
                 self.parse_slice(&nal)
-            }
+            },
+            NAL_SEI_SUFFIX | NAL_UNSPEC62 | NAL_UNSPEC63 => {
+                // Dolby NALs are suffixed to the slices
+                self.current_frame.nals.push(nal.clone());
+            },
             _ => {
-                let old_frame = self.current_frame.first_slice.first_slice_in_pic_flag;
-
                 self.add_current_frame();
 
-                let new_frame = !self.current_frame.first_slice.first_slice_in_pic_flag;
-
-                if old_frame && new_frame {
-                    self.current_frame.nals.push(nal.clone());
-                }
-            },
+                nal.decoded_frame_index = self.decoded_index;
+                self.current_frame.nals.push(nal.clone());
+            }
         };
 
         nal
@@ -229,11 +226,15 @@ impl HevcParser {
 
             println!("{} display order {} poc {} pos {}", pict_type, frame.presentation_number, frame.first_slice.output_picture_number, frame.decoded_number);
         }
-       // println!("{:#?}", self.ordered_frames);
+        //println!("{:#?}", self.ordered_frames);
     }
 
     pub fn finish(&mut self) {
         self.add_current_frame();
         self.reorder_frames();
+    }
+
+    pub fn ordered_frames(&self) -> &Vec<Frame> {
+        return &self.ordered_frames
     }
 }
