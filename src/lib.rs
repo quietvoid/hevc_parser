@@ -51,6 +51,7 @@ impl HevcParser {
 
         nal.start = pos;
         nal.end = end;
+        nal.decoded_frame_index = self.decoded_index;
 
         let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..end]);
         self.reader = BitVecReader::new(bytes);
@@ -64,11 +65,6 @@ impl HevcParser {
         }
 
         match nal.nal_type {
-            NAL_VPS | NAL_SPS | NAL_PPS => (),
-            _ => self.current_frame.nals.push(nal.clone()),
-        };
-
-        match nal.nal_type {
             NAL_VPS => self.parse_vps(),
             NAL_SPS => self.parse_sps(),
             NAL_PPS => self.parse_pps(),
@@ -76,9 +72,21 @@ impl HevcParser {
             NAL_TRAIL_R | NAL_TRAIL_N | NAL_TSA_N | NAL_TSA_R | NAL_STSA_N | NAL_STSA_R
             | NAL_BLA_W_LP | NAL_BLA_W_RADL | NAL_BLA_N_LP | NAL_IDR_W_RADL | NAL_IDR_N_LP
             | NAL_CRA_NUT | NAL_RADL_N | NAL_RADL_R | NAL_RASL_N | NAL_RASL_R => {
+                self.current_frame.nals.push(nal.clone());
+                
                 self.parse_slice(&nal)
             }
-            _ => self.add_current_frame(),
+            _ => {
+                let old_frame = self.current_frame.first_slice.first_slice_in_pic_flag;
+
+                self.add_current_frame();
+
+                let new_frame = !self.current_frame.first_slice.first_slice_in_pic_flag;
+
+                if old_frame && new_frame {
+                    self.current_frame.nals.push(nal.clone());
+                }
+            },
         };
 
         nal
@@ -134,7 +142,6 @@ impl HevcParser {
             self.current_frame.first_slice = slice;
 
             self.current_frame.decoded_number = self.decoded_index;
-            self.decoded_index += 1;
         }
     }
 
@@ -182,6 +189,8 @@ impl HevcParser {
     // If we're here, the last slice of a frame was found already
     fn add_current_frame(&mut self) {
         if self.current_frame.first_slice.first_slice_in_pic_flag {
+            self.decoded_index += 1;
+
             self.current_frame.presentation_number = self.current_frame.first_slice.output_picture_number;
 
             self.current_frame.frame_type = self.current_frame.first_slice.slice_type;
@@ -220,6 +229,7 @@ impl HevcParser {
 
             println!("{} display order {} poc {} pos {}", pict_type, frame.presentation_number, frame.first_slice.output_picture_number, frame.decoded_number);
         }
+       // println!("{:#?}", self.ordered_frames);
     }
 
     pub fn finish(&mut self) {

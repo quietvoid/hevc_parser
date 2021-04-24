@@ -50,6 +50,8 @@ pub struct NALUnit {
     pub nal_type: u8,
     pub nuh_layer_id: u8,
     pub temporal_id: u8,
+
+    pub decoded_frame_index: u64,
 }
 
 #[derive(Default, Debug, Clone)]
