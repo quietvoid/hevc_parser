@@ -19,8 +19,8 @@ pub struct SliceNAL {
 impl SliceNAL {
     pub fn parse(
         bs: &mut BitVecReader,
-        sps_list: &Vec<SPSNAL>,
-        pps_list: &Vec<PPSNAL>,
+        sps_list: &[SPSNAL],
+        pps_list: &[PPSNAL],
         nal: &NALUnit,
         poc_tid0: &mut u64,
         poc: &mut u64,

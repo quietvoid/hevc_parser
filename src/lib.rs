@@ -1,4 +1,5 @@
 use bitvec_helpers::bitvec_reader::BitVecReader;
+use nom::{bytes::complete::take_until, IResult};
 
 pub mod hevc;
 pub mod utils;
@@ -14,6 +15,9 @@ use utils::clear_start_code_emulation_prevention_3_byte;
 // We don't want to parse large slices because the memory is copied
 const MAX_PARSE_SIZE: usize = 2048;
 
+const HEADER_LEN: usize = 3;
+const NAL_START_CODE: &[u8] = &[0, 0, 1];
+
 #[derive(Default)]
 pub struct HevcParser {
     reader: BitVecReader,
@@ -24,7 +28,7 @@ pub struct HevcParser {
     pps: Vec<PPSNAL>,
     ordered_frames: Vec<Frame>,
     frames: Vec<Frame>,
-    
+
     poc: u64,
     poc_tid0: u64,
 
@@ -34,57 +38,124 @@ pub struct HevcParser {
 }
 
 impl HevcParser {
-    pub fn parse_nal(&mut self, data: &[u8], offset: usize, size: usize) -> NALUnit {
+    fn take_until_nal(data: &[u8]) -> IResult<&[u8], &[u8]> {
+        take_until(NAL_START_CODE)(data)
+    }
+
+    pub fn get_offsets(&mut self, data: &[u8], offsets: &mut Vec<usize>) {
+        offsets.clear();
+
+        let mut consumed = 0;
+
+        loop {
+            match Self::take_until_nal(&data[consumed..]) {
+                Ok(nal) => {
+                    // Byte count before the NAL is the offset
+                    consumed += nal.1.len();
+
+                    offsets.push(consumed);
+
+                    // nom consumes the tag, so add it back
+                    consumed += HEADER_LEN;
+                }
+                _ => return,
+            }
+        }
+    }
+
+    pub fn split_nals(
+        &mut self,
+        data: &[u8],
+        offsets: &[usize],
+        last: usize,
+        parse_nals: bool,
+    ) -> Vec<NALUnit> {
+        let count = offsets.len();
+
+        let mut nals = Vec::with_capacity(count);
+
+        for (index, offset) in offsets.iter().enumerate() {
+            let size = if offset == &last {
+                data.len() - offset
+            } else {
+                let size = if index == count - 1 {
+                    last - offset
+                } else {
+                    offsets[index + 1] - offset
+                };
+
+                match &data[offset + size - 1..offset + size + 3] {
+                    [0, 0, 0, 1] => size - 1,
+                    _ => size,
+                }
+            };
+
+            let nal: NALUnit = self.parse_nal(data, *offset, size, parse_nals);
+
+            nals.push(nal);
+        }
+
+        nals
+    }
+
+    fn parse_nal(&mut self, data: &[u8], offset: usize, size: usize, parse_nal: bool) -> NALUnit {
         let mut nal = NALUnit::default();
 
         // Assuming [0, 0, 0, 1] header
         // Offset is at first element
         let pos = offset + 3;
+        let end = offset + size;
 
-        let end = if size > MAX_PARSE_SIZE {
+        let parsing_end = if size > MAX_PARSE_SIZE {
             offset + MAX_PARSE_SIZE
         } else {
-            offset + size
+            end
         };
 
         nal.start = pos;
         nal.end = end;
         nal.decoded_frame_index = self.decoded_index;
 
-        let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..end]);
-        self.reader = BitVecReader::new(bytes);
+        if parse_nal {
+            let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..parsing_end]);
+            self.reader = BitVecReader::new(bytes);
 
-        self.parse_nal_header(&mut nal);
+            self.parse_nal_header(&mut nal);
 
-        self.nals.push(nal.clone());
+            self.nals.push(nal.clone());
+        } else {
+            nal.nal_type = data[pos] >> 1;
+        }
 
         if nal.nuh_layer_id > 0 {
             return nal;
         }
 
-        match nal.nal_type {
-            NAL_VPS => self.parse_vps(),
-            NAL_SPS => self.parse_sps(),
-            NAL_PPS => self.parse_pps(),
+        if parse_nal {
+            match nal.nal_type {
+                NAL_VPS => self.parse_vps(),
+                NAL_SPS => self.parse_sps(),
+                NAL_PPS => self.parse_pps(),
 
-            NAL_TRAIL_R | NAL_TRAIL_N | NAL_TSA_N | NAL_TSA_R | NAL_STSA_N | NAL_STSA_R
-            | NAL_BLA_W_LP | NAL_BLA_W_RADL | NAL_BLA_N_LP | NAL_IDR_W_RADL | NAL_IDR_N_LP
-            | NAL_CRA_NUT | NAL_RADL_N | NAL_RADL_R | NAL_RASL_N | NAL_RASL_R => {
-                self.current_frame.nals.push(nal.clone());
-                
-                self.parse_slice(&nal)
-            },
-            NAL_SEI_SUFFIX | NAL_UNSPEC62 | NAL_UNSPEC63 => {
-                // Dolby NALs are suffixed to the slices
-                self.current_frame.nals.push(nal.clone());
-            },
-            _ => {
-                self.add_current_frame();
+                NAL_TRAIL_R | NAL_TRAIL_N | NAL_TSA_N | NAL_TSA_R | NAL_STSA_N | NAL_STSA_R
+                | NAL_BLA_W_LP | NAL_BLA_W_RADL | NAL_BLA_N_LP | NAL_IDR_W_RADL | NAL_IDR_N_LP
+                | NAL_CRA_NUT | NAL_RADL_N | NAL_RADL_R | NAL_RASL_N | NAL_RASL_R => {
+                    self.current_frame.nals.push(nal.clone());
 
-                nal.decoded_frame_index = self.decoded_index;
-                self.current_frame.nals.push(nal.clone());
-            }
-        };
+                    self.parse_slice(&nal)
+                }
+                NAL_SEI_SUFFIX | NAL_UNSPEC62 | NAL_UNSPEC63 => {
+                    // Dolby NALs are suffixed to the slices
+                    self.current_frame.nals.push(nal.clone());
+                }
+                _ => {
+                    self.add_current_frame();
+
+                    nal.decoded_frame_index = self.decoded_index;
+                    self.current_frame.nals.push(nal.clone());
+                }
+            };
+        }
 
         nal
     }
@@ -188,7 +259,8 @@ impl HevcParser {
         if self.current_frame.first_slice.first_slice_in_pic_flag {
             self.decoded_index += 1;
 
-            self.current_frame.presentation_number = self.current_frame.first_slice.output_picture_number;
+            self.current_frame.presentation_number =
+                self.current_frame.first_slice.output_picture_number;
 
             self.current_frame.frame_type = self.current_frame.first_slice.slice_type;
 
@@ -202,12 +274,10 @@ impl HevcParser {
         let mut offset = self.presentation_index;
 
         self.frames.sort_by_key(|f| f.presentation_number);
-        self.frames
-            .iter_mut()
-            .for_each(|f| { 
-                f.presentation_number = offset;
-                offset += 1;
-            });
+        self.frames.iter_mut().for_each(|f| {
+            f.presentation_number = offset;
+            offset += 1;
+        });
 
         self.presentation_index = offset;
         self.ordered_frames.extend_from_slice(&self.frames);
@@ -224,9 +294,14 @@ impl HevcParser {
                 _ => "",
             };
 
-            println!("{} display order {} poc {} pos {}", pict_type, frame.presentation_number, frame.first_slice.output_picture_number, frame.decoded_number);
+            println!(
+                "{} display order {} poc {} pos {}",
+                pict_type,
+                frame.presentation_number,
+                frame.first_slice.output_picture_number,
+                frame.decoded_number
+            );
         }
-        //println!("{:#?}", self.ordered_frames);
     }
 
     pub fn finish(&mut self) {
@@ -235,6 +310,6 @@ impl HevcParser {
     }
 
     pub fn ordered_frames(&self) -> &Vec<Frame> {
-        return &self.ordered_frames
+        &self.ordered_frames
     }
 }
