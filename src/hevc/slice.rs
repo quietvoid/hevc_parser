@@ -2,19 +2,18 @@ use super::BitVecReader;
 use super::*;
 use super::{pps::PPSNAL, sps::SPSNAL, NALUnit};
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Clone)]
 pub struct SliceNAL {
-    first_slice_in_pic_flag: bool,
-    key_frame: bool,
+    pub first_slice_in_pic_flag: bool,
+    pub key_frame: bool,
     pps_id: u64,
-    slice_type: u64,
+    pub slice_type: u64,
 
     dependent_slice_segment_flag: bool,
     slice_segment_addr: u64,
 
     pic_order_cnt_lsb: u64,
-    output_picture_number: u64,
-    pub(crate) id: usize,
+    pub output_picture_number: u64,
 }
 
 impl SliceNAL {

@@ -16,16 +16,21 @@ const MAX_PARSE_SIZE: usize = 2048;
 
 #[derive(Default)]
 pub struct HevcParser {
+    reader: BitVecReader,
+
     nals: Vec<NALUnit>,
     vps: Vec<VPSNAL>,
     sps: Vec<SPSNAL>,
     pps: Vec<PPSNAL>,
-    slices: Vec<SliceNAL>,
-
+    ordered_frames: Vec<Frame>,
+    frames: Vec<Frame>,
+    
     poc: u64,
     poc_tid0: u64,
 
-    reader: BitVecReader,
+    current_frame: Frame,
+    decoded_index: u64,
+    presentation_index: u64,
 }
 
 impl HevcParser {
@@ -58,8 +63,12 @@ impl HevcParser {
             return nal;
         }
 
-        // ID by type
-        nal.id = match nal.nal_type {
+        match nal.nal_type {
+            NAL_VPS | NAL_SPS | NAL_PPS => (),
+            _ => self.current_frame.nals.push(nal.clone()),
+        };
+
+        match nal.nal_type {
             NAL_VPS => self.parse_vps(),
             NAL_SPS => self.parse_sps(),
             NAL_PPS => self.parse_pps(),
@@ -69,7 +78,7 @@ impl HevcParser {
             | NAL_CRA_NUT | NAL_RADL_N | NAL_RADL_R | NAL_RASL_N | NAL_RASL_R => {
                 self.parse_slice(&nal)
             }
-            _ => None,
+            _ => self.add_current_frame(),
         };
 
         nal
@@ -84,40 +93,30 @@ impl HevcParser {
         nal.temporal_id = self.reader.get_n::<u8>(3) - 1;
     }
 
-    fn parse_vps(&mut self) -> Option<usize> {
+    fn parse_vps(&mut self) {
         let vps = VPSNAL::parse(&mut self.reader);
-        let id = Some(vps.vps_id as usize);
 
         self.remove_vps(&vps);
 
         self.vps.push(vps);
-
-        id
     }
 
-    fn parse_sps(&mut self) -> Option<usize> {
+    fn parse_sps(&mut self) {
         let sps = SPSNAL::parse(&mut self.reader);
-        let id = Some(sps.sps_id as usize);
-
         self.remove_sps(&sps);
 
         self.sps.push(sps);
-
-        id
     }
 
-    fn parse_pps(&mut self) -> Option<usize> {
+    fn parse_pps(&mut self) {
         let pps = PPSNAL::parse(&mut self.reader, &self.sps);
-        let id = Some(pps.pps_id as usize);
 
         self.remove_pps(&pps);
 
         self.pps.push(pps);
-
-        id
     }
 
-    fn parse_slice(&mut self, nal: &NALUnit) -> Option<usize> {
+    fn parse_slice(&mut self, nal: &NALUnit) {
         let slice = SliceNAL::parse(
             &mut self.reader,
             &self.sps,
@@ -126,13 +125,17 @@ impl HevcParser {
             &mut self.poc_tid0,
             &mut self.poc,
         );
-        let id = Some(slice.id);
 
-        println!("{:#?}", slice);
+        if slice.key_frame {
+            self.reorder_frames();
+        }
 
-        self.slices.push(slice);
+        if slice.first_slice_in_pic_flag {
+            self.current_frame.first_slice = slice;
 
-        id
+            self.current_frame.decoded_number = self.decoded_index;
+            self.decoded_index += 1;
+        }
     }
 
     fn remove_vps(&mut self, vps: &VPSNAL) {
@@ -174,5 +177,53 @@ impl HevcParser {
                 self.pps.remove(pps.pps_id as usize);
             }
         }
+    }
+
+    // If we're here, the last slice of a frame was found already
+    fn add_current_frame(&mut self) {
+        if self.current_frame.first_slice.first_slice_in_pic_flag {
+            self.current_frame.presentation_number = self.current_frame.first_slice.output_picture_number;
+
+            self.current_frame.frame_type = self.current_frame.first_slice.slice_type;
+
+            self.frames.push(self.current_frame.clone());
+
+            self.current_frame = Frame::default();
+        }
+    }
+
+    fn reorder_frames(&mut self) {
+        let mut offset = self.presentation_index;
+
+        self.frames.sort_by_key(|f| f.presentation_number);
+        self.frames
+            .iter_mut()
+            .for_each(|f| { 
+                f.presentation_number = offset;
+                offset += 1;
+            });
+
+        self.presentation_index = offset;
+        self.ordered_frames.extend_from_slice(&self.frames);
+        self.frames.clear();
+    }
+
+    pub fn display(&self) {
+        println!("{} frames", &self.ordered_frames.len());
+        for frame in &self.ordered_frames {
+            let pict_type = match frame.frame_type {
+                2 => "I",
+                1 => "P",
+                0 => "B",
+                _ => "",
+            };
+
+            println!("{} display order {} poc {} pos {}", pict_type, frame.presentation_number, frame.first_slice.output_picture_number, frame.decoded_number);
+        }
+    }
+
+    pub fn finish(&mut self) {
+        self.add_current_frame();
+        self.reorder_frames();
     }
 }

@@ -1,3 +1,5 @@
+use self::slice::SliceNAL;
+
 use super::BitVecReader;
 
 pub(crate) mod hrd_parameters;
@@ -40,7 +42,7 @@ pub const NAL_SEI_SUFFIX: u8 = 40;
 pub const NAL_UNSPEC62: u8 = 62;
 pub const NAL_UNSPEC63: u8 = 63;
 
-#[derive(Default, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct NALUnit {
     pub start: usize,
     pub end: usize,
@@ -48,6 +50,14 @@ pub struct NALUnit {
     pub nal_type: u8,
     pub nuh_layer_id: u8,
     pub temporal_id: u8,
+}
 
-    pub id: Option<usize>,
+#[derive(Default, Debug, Clone)]
+pub struct Frame {
+    pub decoded_number: u64,
+    pub presentation_number: u64,
+    pub frame_type: u64,
+
+    pub nals: Vec<NALUnit>,
+    pub first_slice: SliceNAL,
 }
