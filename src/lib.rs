@@ -140,9 +140,9 @@ impl HevcParser {
                 NAL_TRAIL_R | NAL_TRAIL_N | NAL_TSA_N | NAL_TSA_R | NAL_STSA_N | NAL_STSA_R
                 | NAL_BLA_W_LP | NAL_BLA_W_RADL | NAL_BLA_N_LP | NAL_IDR_W_RADL | NAL_IDR_N_LP
                 | NAL_CRA_NUT | NAL_RADL_N | NAL_RADL_R | NAL_RASL_N | NAL_RASL_R => {
-                    self.current_frame.nals.push(nal.clone());
+                    self.parse_slice(&mut nal);
 
-                    self.parse_slice(&nal)
+                    self.current_frame.nals.push(nal.clone());
                 }
                 NAL_SEI_SUFFIX | NAL_UNSPEC62 | NAL_UNSPEC63 => {
                     // Dolby NALs are suffixed to the slices
@@ -192,7 +192,7 @@ impl HevcParser {
         self.pps.push(pps);
     }
 
-    fn parse_slice(&mut self, nal: &NALUnit) {
+    fn parse_slice(&mut self, nal: &mut NALUnit) {
         let slice = SliceNAL::parse(
             &mut self.reader,
             &self.sps,
@@ -201,6 +201,12 @@ impl HevcParser {
             &mut self.poc_tid0,
             &mut self.poc,
         );
+
+        // Consecutive slice NALs cases
+        if self.current_frame.first_slice.first_slice_in_pic_flag && slice.first_slice_in_pic_flag {
+            nal.decoded_frame_index = self.decoded_index + 1;
+            self.add_current_frame();
+        }
 
         if slice.key_frame {
             self.reorder_frames();
