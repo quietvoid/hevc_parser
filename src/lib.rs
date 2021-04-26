@@ -121,8 +121,6 @@ impl HevcParser {
             self.reader = BitVecReader::new(bytes);
 
             self.parse_nal_header(&mut nal);
-
-            self.nals.push(nal.clone());
         } else {
             nal.nal_type = data[pos] >> 1;
         }
@@ -155,6 +153,8 @@ impl HevcParser {
                     self.current_frame.nals.push(nal.clone());
                 }
             };
+
+            self.nals.push(nal.clone());
         }
 
         nal
@@ -317,5 +317,9 @@ impl HevcParser {
 
     pub fn ordered_frames(&self) -> &Vec<Frame> {
         &self.ordered_frames
+    }
+
+    pub fn get_nals(&self) -> &Vec<NALUnit> {
+        &self.nals
     }
 }
