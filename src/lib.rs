@@ -101,9 +101,9 @@ impl HevcParser {
     fn parse_nal(&mut self, data: &[u8], offset: usize, size: usize, parse_nal: bool) -> NALUnit {
         let mut nal = NALUnit::default();
 
-        // Assuming [0, 0, 0, 1] header
+        // Assuming [0, 0, 1] header
         // Offset is at first element
-        let pos = offset + 3;
+        let pos = offset + HEADER_LEN;
         let end = offset + size;
 
         let parsing_end = if size > MAX_PARSE_SIZE {
@@ -115,6 +115,18 @@ impl HevcParser {
         nal.start = pos;
         nal.end = end;
         nal.decoded_frame_index = self.decoded_index;
+
+        nal.start_code_len = if offset > 0 {
+            // Previous byte is 0, offset..offset + 3 is [0, 0, 1]
+            // Actual start code is length 4
+            if data[offset - 1] == 0 {
+                4
+            } else {
+                3
+            }
+        } else {
+            3
+        };
 
         if parse_nal {
             let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..parsing_end]);
