@@ -1,6 +1,6 @@
 [package]
 name = "hevc_parser"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["quietvoid"]
 edition = "2018"
 license = "MIT"

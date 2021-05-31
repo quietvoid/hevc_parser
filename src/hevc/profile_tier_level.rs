@@ -56,21 +56,23 @@ impl ProfileTierLevel {
         }
 
         for i in 0..vps_max_sub_layers_minus1 as usize {
-            self.sub_layer_profile_space.push(bs.get_n(2));
-            self.sub_layer_tier_flag.push(bs.get());
-            self.sub_layer_profile_idc.push(bs.get_n(5));
+            if self.sub_layer_profile_present_flag[i] {
+                self.sub_layer_profile_space.push(bs.get_n(2));
+                self.sub_layer_tier_flag.push(bs.get());
+                self.sub_layer_profile_idc.push(bs.get_n(5));
 
-            for _ in 0..32 {
-                self.sub_layer_profile_compatibility_flag.push(bs.get());
+                for _ in 0..32 {
+                    self.sub_layer_profile_compatibility_flag.push(bs.get());
+                }
+
+                self.sub_layer_progressive_source_flag.push(bs.get());
+                self.sub_layer_interlaced_source_flag.push(bs.get());
+                self.sub_layer_non_packed_constraint_flag.push(bs.get());
+                self.sub_layer_frame_only_constraint_flag.push(bs.get());
+
+                bs.skip_n(32);
+                bs.skip_n(12);
             }
-
-            self.sub_layer_progressive_source_flag.push(bs.get());
-            self.sub_layer_interlaced_source_flag.push(bs.get());
-            self.sub_layer_non_packed_constraint_flag.push(bs.get());
-            self.sub_layer_frame_only_constraint_flag.push(bs.get());
-
-            bs.skip_n(32);
-            bs.skip_n(12);
 
             if self.sub_layer_level_present_flag[i] {
                 self.sub_layer_level_idc.push(bs.get_n(8));
