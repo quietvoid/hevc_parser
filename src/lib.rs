@@ -15,12 +15,20 @@ use utils::clear_start_code_emulation_prevention_3_byte;
 // We don't want to parse large slices because the memory is copied
 const MAX_PARSE_SIZE: usize = 2048;
 
-const HEADER_LEN: usize = 3;
-const NAL_START_CODE: &[u8] = &[0, 0, 1];
+const HEADER_LEN_3: usize = 3;
+const HEADER_LEN_4: usize = 4;
+const NAL_START_CODE_3: &[u8] = &[0, 0, 1];
+const NAL_START_CODE_4: &[u8] = &[0, 0, 0, 1];
+
+pub enum NALUStartCode {
+    Length3,
+    Length4,
+}
 
 #[derive(Default)]
 pub struct HevcParser {
     reader: BitVecReader,
+    pub nalu_start_code: NALUStartCode,
 
     nals: Vec<NALUnit>,
     vps: Vec<VPSNAL>,
@@ -38,8 +46,15 @@ pub struct HevcParser {
 }
 
 impl HevcParser {
-    fn take_until_nal(data: &[u8]) -> IResult<&[u8], &[u8]> {
-        take_until(NAL_START_CODE)(data)
+    fn take_until_nal<'a>(tag: &[u8], data: &'a [u8]) -> IResult<&'a [u8], &'a [u8]> {
+        take_until(tag)(data)
+    }
+
+    pub fn with_nalu_start_code(start_code: NALUStartCode) -> HevcParser {
+        HevcParser {
+            nalu_start_code: start_code,
+            ..Default::default()
+        }
     }
 
     pub fn get_offsets(&mut self, data: &[u8], offsets: &mut Vec<usize>) {
@@ -47,8 +62,13 @@ impl HevcParser {
 
         let mut consumed = 0;
 
+        let nal_start_tag = match &self.nalu_start_code {
+            NALUStartCode::Length3 => NAL_START_CODE_3,
+            NALUStartCode::Length4 => NAL_START_CODE_4,
+        };
+
         loop {
-            match Self::take_until_nal(&data[consumed..]) {
+            match Self::take_until_nal(nal_start_tag, &data[consumed..]) {
                 Ok(nal) => {
                     // Byte count before the NAL is the offset
                     consumed += nal.1.len();
@@ -56,7 +76,10 @@ impl HevcParser {
                     offsets.push(consumed);
 
                     // nom consumes the tag, so add it back
-                    consumed += HEADER_LEN;
+                    consumed += match &self.nalu_start_code {
+                        NALUStartCode::Length3 => HEADER_LEN_3,
+                        NALUStartCode::Length4 => HEADER_LEN_4,
+                    };
                 }
                 _ => return,
             }
@@ -103,7 +126,7 @@ impl HevcParser {
 
         // Assuming [0, 0, 1] header
         // Offset is at first element
-        let pos = offset + HEADER_LEN;
+        let pos = offset + HEADER_LEN_3;
         let end = offset + size;
 
         let parsing_end = if size > MAX_PARSE_SIZE {
@@ -333,5 +356,11 @@ impl HevcParser {
 
     pub fn get_nals(&self) -> &Vec<NALUnit> {
         &self.nals
+    }
+}
+
+impl Default for NALUStartCode {
+    fn default() -> Self {
+        NALUStartCode::Length3
     }
 }
