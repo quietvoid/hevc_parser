@@ -200,8 +200,12 @@ impl HevcParser {
         self.reader.get();
 
         nal.nal_type = self.reader.get_n(6);
-        nal.nuh_layer_id = self.reader.get_n(6);
-        nal.temporal_id = self.reader.get_n::<u8>(3) - 1;
+
+        if self.reader.available() < 9 && matches!(nal.nal_type, NAL_EOS_NUT | NAL_EOB_NUT) {
+        } else {
+            nal.nuh_layer_id = self.reader.get_n(6);
+            nal.temporal_id = self.reader.get_n::<u8>(3) - 1;
+        }
     }
 
     fn parse_vps(&mut self) {

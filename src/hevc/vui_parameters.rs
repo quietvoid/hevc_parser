@@ -53,9 +53,10 @@ pub struct VuiParameters {
 
 impl VuiParameters {
     pub fn parse(bs: &mut BitVecReader, max_sub_layers: u8) -> VuiParameters {
-        let mut vui = VuiParameters::default();
-
-        vui.sar_present = bs.get();
+        let mut vui = VuiParameters {
+            sar_present: bs.get(),
+            ..Default::default()
+        };
 
         if vui.sar_present {
             vui.sar_idx = bs.get_n(8);

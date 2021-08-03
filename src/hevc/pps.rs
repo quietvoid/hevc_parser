@@ -50,11 +50,12 @@ pub struct PPSNAL {
 }
 
 impl PPSNAL {
-    pub fn parse(bs: &mut BitVecReader, sps_list: &Vec<SPSNAL>) -> PPSNAL {
-        let mut pps = PPSNAL::default();
-
-        pps.pps_id = bs.get_ue();
-        pps.sps_id = bs.get_ue();
+    pub fn parse(bs: &mut BitVecReader, sps_list: &[SPSNAL]) -> PPSNAL {
+        let mut pps = PPSNAL {
+            pps_id: bs.get_ue(),
+            sps_id: bs.get_ue(),
+            ..Default::default()
+        };
 
         assert!(sps_list.get(pps.sps_id as usize).is_some());
 

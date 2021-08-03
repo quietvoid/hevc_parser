@@ -84,9 +84,11 @@ pub struct SPSNAL {
 
 impl SPSNAL {
     pub fn parse(bs: &mut BitVecReader) -> SPSNAL {
-        let mut sps = SPSNAL::default();
+        let mut sps = SPSNAL {
+            vps_id: bs.get_n(4),
+            ..Default::default()
+        };
 
-        sps.vps_id = bs.get_n(4);
         sps.max_sub_layers = bs.get_n::<u8>(3) + 1;
         sps.temporal_id_nesting_flag = bs.get();
 

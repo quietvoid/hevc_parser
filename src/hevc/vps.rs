@@ -25,9 +25,10 @@ pub struct VPSNAL {
 
 impl VPSNAL {
     pub fn parse(bs: &mut BitVecReader) -> VPSNAL {
-        let mut vps = VPSNAL::default();
-
-        vps.vps_id = bs.get_n(4);
+        let mut vps = VPSNAL {
+            vps_id: bs.get_n(4),
+            ..Default::default()
+        };
 
         // vps_reserved_three_2bits
         assert!(bs.get_n::<u8>(2) == 3);

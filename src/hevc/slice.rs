@@ -25,9 +25,10 @@ impl SliceNAL {
         poc_tid0: &mut u64,
         poc: &mut u64,
     ) -> SliceNAL {
-        let mut slice = SliceNAL::default();
-
-        slice.first_slice_in_pic_flag = bs.get();
+        let mut slice = SliceNAL {
+            first_slice_in_pic_flag: bs.get(),
+            ..Default::default()
+        };
 
         if is_irap_nal(nal) {
             slice.key_frame = true;
