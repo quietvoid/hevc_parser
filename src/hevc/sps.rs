@@ -171,9 +171,11 @@ impl SPSNAL {
         }
 
         sps.nb_st_rps = bs.get_ue();
-        for i in 0..sps.nb_st_rps {
-            let rps = ShortTermRPS::parse(bs, &sps, i as usize, sps.nb_st_rps, false);
-            sps.short_term_ref_pic_sets.push(rps);
+
+        sps.short_term_ref_pic_sets
+            .resize_with(sps.nb_st_rps as usize, Default::default);
+        for i in 0..sps.nb_st_rps as usize {
+            sps.short_term_ref_pic_sets[i] = ShortTermRPS::parse(bs, &sps, i, sps.nb_st_rps, false);
         }
 
         sps.long_term_ref_pics_present_flag = bs.get();

@@ -26,7 +26,7 @@ pub struct ProfileTierLevel {
 }
 
 impl ProfileTierLevel {
-    pub fn parse(&mut self, bs: &mut BitVecReader, vps_max_sub_layers: u8) {
+    pub fn parse(&mut self, bs: &mut BitVecReader, max_sub_layers: u8) {
         self.general_profile_space = bs.get_n(2);
         self.general_tier_flag = bs.get();
         self.general_profile_idc = bs.get_n(5);
@@ -43,19 +43,19 @@ impl ProfileTierLevel {
         bs.skip_n(12);
         self.general_level_idc = bs.get_n(8);
 
-        let vps_max_sub_layers_minus1 = vps_max_sub_layers - 1;
-        for _ in 0..vps_max_sub_layers_minus1 {
+        let max_sub_layers_minus1 = max_sub_layers - 1;
+        for _ in 0..max_sub_layers_minus1 {
             self.sub_layer_profile_present_flag.push(bs.get());
             self.sub_layer_level_present_flag.push(bs.get());
         }
 
-        if vps_max_sub_layers_minus1 > 0 {
-            for _ in vps_max_sub_layers_minus1..8 {
+        if max_sub_layers_minus1 > 0 {
+            for _ in max_sub_layers_minus1..8 {
                 bs.skip_n(2);
             }
         }
 
-        for i in 0..vps_max_sub_layers_minus1 as usize {
+        for i in 0..max_sub_layers_minus1 as usize {
             if self.sub_layer_profile_present_flag[i] {
                 self.sub_layer_profile_space.push(bs.get_n(2));
                 self.sub_layer_tier_flag.push(bs.get());

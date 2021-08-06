@@ -224,7 +224,7 @@ impl HevcParser {
     }
 
     fn parse_pps(&mut self) {
-        let pps = PPSNAL::parse(&mut self.reader, &self.sps);
+        let pps = PPSNAL::parse(&mut self.reader);
 
         self.remove_pps(&pps);
 

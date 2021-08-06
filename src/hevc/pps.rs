@@ -1,4 +1,4 @@
-use super::{scaling_list_data::ScalingListData, sps::SPSNAL, BitVecReader};
+use super::{scaling_list_data::ScalingListData, BitVecReader};
 
 #[derive(Default, Debug, PartialEq)]
 pub struct PPSNAL {
@@ -50,14 +50,12 @@ pub struct PPSNAL {
 }
 
 impl PPSNAL {
-    pub fn parse(bs: &mut BitVecReader, sps_list: &[SPSNAL]) -> PPSNAL {
+    pub fn parse(bs: &mut BitVecReader) -> PPSNAL {
         let mut pps = PPSNAL {
             pps_id: bs.get_ue(),
             sps_id: bs.get_ue(),
             ..Default::default()
         };
-
-        assert!(sps_list.get(pps.sps_id as usize).is_some());
 
         pps.dependent_slice_segments_enabled_flag = bs.get();
         pps.output_flag_present_flag = bs.get();
@@ -70,7 +68,13 @@ impl PPSNAL {
         pps.constrained_intra_pred_flag = bs.get();
         pps.transform_skip_enabled_flag = bs.get();
         pps.cu_qp_delta_enabled_flag = bs.get();
-        pps.diff_cu_qp_delta_depth = bs.get_ue();
+
+        pps.diff_cu_qp_delta_depth = if pps.cu_qp_delta_enabled_flag {
+            bs.get_ue()
+        } else {
+            0
+        };
+
         pps.cb_qp_offset = bs.get_se();
         pps.cr_qp_offset = bs.get_se();
 
