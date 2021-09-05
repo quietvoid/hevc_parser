@@ -1,3 +1,5 @@
+use anyhow::{Result, bail};
+
 use self::slice::SliceNAL;
 
 use super::BitVecReader;
@@ -42,6 +44,8 @@ pub const NAL_SEI_SUFFIX: u8 = 40;
 pub const NAL_UNSPEC62: u8 = 62;
 pub const NAL_UNSPEC63: u8 = 63;
 
+pub const USER_DATA_REGISTERED_ITU_T_35: u8 = 4;
+
 #[derive(Default, Debug, Clone)]
 pub struct NALUnit {
     pub start: usize,
@@ -63,4 +67,75 @@ pub struct Frame {
 
     pub nals: Vec<NALUnit>,
     pub first_slice: SliceNAL,
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct SeiMessage {
+    num_payload_type_ff_bytes: usize,
+    last_payload_type_byte: u8,
+
+    num_payload_size_ff_bytes: usize,
+    last_payload_size_byte: u8,
+
+    payload_type: u8,
+    payload_size: usize,
+}
+
+impl SeiMessage {
+    pub fn from_bytes(data: &[u8]) -> Result<SeiMessage> {
+        let mut reader = BitVecReader::new(data.to_vec());
+
+        SeiMessage::parse(&mut reader)
+    }
+
+    pub fn parse(reader: &mut BitVecReader) -> Result<SeiMessage> {
+        // forbidden_zero_bit
+        reader.skip_n(1);
+
+        let nal_type = reader.get_n::<u8>(6);
+
+        if nal_type != NAL_SEI_PREFIX {
+            bail!("NAL type {} is not SEI_PREFIX", nal_type);
+        }
+
+        if reader.available() < 9 && matches!(nal_type, NAL_EOS_NUT | NAL_EOB_NUT) {
+        } else {
+            reader.skip_n(6); // nuh_layer_id
+            reader.skip_n(3); // temporal_id
+        }
+
+        let mut msg;
+
+        loop {
+            msg = SeiMessage::default();
+
+            msg.last_payload_type_byte = reader.get_n(8);
+            while msg.last_payload_type_byte == 0xFF {
+                msg.num_payload_type_ff_bytes += 1;
+                msg.last_payload_type_byte = reader.get_n(8);
+
+                msg.payload_type += 255;
+            }
+
+            msg.payload_type += msg.last_payload_type_byte;
+
+            msg.last_payload_size_byte = reader.get_n(8);
+            while msg.last_payload_size_byte == 0xFF {
+                msg.num_payload_size_ff_bytes += 1;
+                msg.last_payload_size_byte = reader.get_n(8);
+                
+                msg.payload_size += 255;
+            }
+            
+            msg.payload_size += msg.last_payload_size_byte as usize;
+
+            reader.skip_n(msg.payload_size * 8);
+
+            if reader.available() <= 8 || reader.get_n::<u8>(8) == 0x80 {
+                break;
+            }
+        }
+
+        Ok(msg)
+    }
 }
