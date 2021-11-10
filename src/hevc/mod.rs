@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{bail, Result};
 
 use self::slice::SliceNAL;
 
@@ -123,10 +123,10 @@ impl SeiMessage {
             while msg.last_payload_size_byte == 0xFF {
                 msg.num_payload_size_ff_bytes += 1;
                 msg.last_payload_size_byte = reader.get_n(8);
-                
+
                 msg.payload_size += 255;
             }
-            
+
             msg.payload_size += msg.last_payload_size_byte as usize;
 
             reader.skip_n(msg.payload_size * 8);

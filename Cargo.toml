@@ -1,6 +1,6 @@
 [package]
 name = "hevc_parser"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["quietvoid"]
 edition = "2018"
 license = "MIT"
@@ -8,6 +8,6 @@ description = "HEVC format parser, incomplete"
 repository = "https://github.com/quietvoid/hevc_parser"
 
 [dependencies]
-nom = "6.1.2"
-bitvec_helpers = "0.1.0"
-anyhow = "1.0"
+nom = "7.1.0"
+bitvec_helpers = "0.1.1"
+anyhow = "1.0.45"
