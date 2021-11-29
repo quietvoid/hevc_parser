@@ -1,3 +1,5 @@
+use anyhow::Result;
+
 use super::sps::SPSNAL;
 use super::BitVecReader;
 
@@ -26,22 +28,22 @@ impl ShortTermRPS {
         st_rps_idx: usize,
         nb_st_rps: u64,
         is_slice_header: bool,
-    ) -> ShortTermRPS {
+    ) -> Result<ShortTermRPS> {
         let mut rps = ShortTermRPS::default();
 
         if st_rps_idx > 0 && nb_st_rps > 0 {
-            rps.inter_ref_pic_set_prediction_flag = bs.get();
+            rps.inter_ref_pic_set_prediction_flag = bs.get()?;
         }
 
         if rps.inter_ref_pic_set_prediction_flag {
             let ref_pic_sets = &sps.short_term_ref_pic_sets;
 
             if st_rps_idx == nb_st_rps as usize || is_slice_header {
-                rps.delta_idx = bs.get_ue();
+                rps.delta_idx = bs.get_ue()?;
             }
 
-            rps.delta_rps_sign = bs.get();
-            rps.abs_delta_rps = bs.get_ue() + 1;
+            rps.delta_rps_sign = bs.get()?;
+            rps.abs_delta_rps = bs.get_ue()? + 1;
 
             let ref_rps_idx = st_rps_idx - (rps.delta_idx as usize + 1);
             let mut num_delta_pocs: usize = 0;
@@ -61,27 +63,27 @@ impl ShortTermRPS {
             rps.use_delta_flags.resize(num_delta_pocs + 1, true);
 
             for i in 0..=num_delta_pocs {
-                rps.used_by_curr_pic_flags[i] = bs.get();
+                rps.used_by_curr_pic_flags[i] = bs.get()?;
 
                 if !rps.used_by_curr_pic_flags[i] {
-                    rps.use_delta_flags[i] = bs.get();
+                    rps.use_delta_flags[i] = bs.get()?;
                 }
             }
         } else {
-            rps.num_negative_pics = bs.get_ue();
-            rps.num_positive_pics = bs.get_ue();
+            rps.num_negative_pics = bs.get_ue()?;
+            rps.num_positive_pics = bs.get_ue()?;
 
             for _ in 0..rps.num_negative_pics {
-                rps.delta_poc_s0.push(bs.get_ue() + 1);
-                rps.used_by_curr_pic_s0_flags.push(bs.get());
+                rps.delta_poc_s0.push(bs.get_ue()? + 1);
+                rps.used_by_curr_pic_s0_flags.push(bs.get()?);
             }
 
             for _ in 0..rps.num_positive_pics {
-                rps.delta_poc_s1.push(bs.get_ue() + 1);
-                rps.used_by_curr_pic_s1_flags.push(bs.get());
+                rps.delta_poc_s1.push(bs.get_ue()? + 1);
+                rps.used_by_curr_pic_s1_flags.push(bs.get()?);
             }
         }
 
-        rps
+        Ok(rps)
     }
 }

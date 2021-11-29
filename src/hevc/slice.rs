@@ -1,3 +1,5 @@
+use anyhow::{Result, format_err};
+
 use super::BitVecReader;
 use super::*;
 use super::{pps::PPSNAL, sps::SPSNAL, NALUnit};
@@ -24,9 +26,9 @@ impl SliceNAL {
         nal: &NALUnit,
         poc_tid0: &mut u64,
         poc: &mut u64,
-    ) -> SliceNAL {
+    ) -> Result<SliceNAL> {
         let mut slice = SliceNAL {
-            first_slice_in_pic_flag: bs.get(),
+            first_slice_in_pic_flag: bs.get()?,
             ..Default::default()
         };
 
@@ -35,13 +37,13 @@ impl SliceNAL {
             bs.skip_n(1); // no_output_of_prior_pics_flag
         }
 
-        slice.pps_id = bs.get_ue();
-        let pps = pps_list.get(slice.pps_id as usize).unwrap();
-        let sps = sps_list.get(pps.sps_id as usize).unwrap();
+        slice.pps_id = bs.get_ue()?;
+        let pps = pps_list.get(slice.pps_id as usize).ok_or(format_err!("Invalid PPS index"))?;
+        let sps = sps_list.get(pps.sps_id as usize).ok_or(format_err!("Invalid SPS index"))?;
 
         if !slice.first_slice_in_pic_flag {
             if pps.dependent_slice_segments_enabled_flag {
-                slice.dependent_slice_segment_flag = bs.get();
+                slice.dependent_slice_segment_flag = bs.get()?;
             } else {
                 slice.dependent_slice_segment_flag = false;
             }
@@ -55,14 +57,14 @@ impl SliceNAL {
         }
 
         if slice.dependent_slice_segment_flag {
-            return slice;
+            return Ok(slice);
         }
 
         for _ in 0..pps.num_extra_slice_header_bits {
             bs.skip_n(1); // slice_reserved_undetermined_flag
         }
 
-        slice.slice_type = bs.get_ue();
+        slice.slice_type = bs.get_ue()?;
 
         if pps.output_flag_present_flag {
             bs.skip_n(1);
@@ -93,7 +95,7 @@ impl SliceNAL {
             *poc_tid0 = *poc;
         }
 
-        slice
+        Ok(slice)
     }
 }
 

@@ -1,5 +1,7 @@
-use super::BitVecReader;
+use anyhow::Result;
 use std::cmp::min;
+
+use super::BitVecReader;
 
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct ScalingListData {
@@ -10,7 +12,7 @@ pub struct ScalingListData {
 }
 
 impl ScalingListData {
-    pub fn parse(bs: &mut BitVecReader) -> ScalingListData {
+    pub fn parse(bs: &mut BitVecReader) -> Result<ScalingListData> {
         let mut scl = ScalingListData::default();
 
         scl.scaling_list_pred_mode_flag.resize(4, Vec::new());
@@ -30,27 +32,27 @@ impl ScalingListData {
             }
 
             for matrix_id in 0..matrix_size {
-                scl.scaling_list_pred_mode_flag[size_id][matrix_id] = bs.get();
+                scl.scaling_list_pred_mode_flag[size_id][matrix_id] = bs.get()?;
 
                 if !scl.scaling_list_pred_mode_flag[size_id][matrix_id] {
-                    scl.scaling_list_pred_matrix_id_delta[size_id][matrix_id] = bs.get_ue();
+                    scl.scaling_list_pred_matrix_id_delta[size_id][matrix_id] = bs.get_ue()?;
                 } else {
                     let _next_coef = 8;
                     let coef_num = min(64, 1 << (4 + (size_id << 1)));
 
                     if size_id > 1 {
-                        scl.scaling_list_dc_coef_minus8[size_id - 2][matrix_id] = bs.get_se();
+                        scl.scaling_list_dc_coef_minus8[size_id - 2][matrix_id] = bs.get_se()?;
                     }
 
                     scl.scaling_list_delta_coef[size_id][matrix_id].resize(coef_num, 0);
 
                     for i in 0..coef_num {
-                        scl.scaling_list_delta_coef[size_id][matrix_id][i] = bs.get_se();
+                        scl.scaling_list_delta_coef[size_id][matrix_id][i] = bs.get_se()?;
                     }
                 }
             }
         }
 
-        scl
+        Ok(scl)
     }
 }

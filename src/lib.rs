@@ -1,5 +1,7 @@
-use bitvec_helpers::bitvec_reader::BitVecReader;
+use anyhow::Result;
 use nom::{bytes::complete::take_until, IResult};
+
+use bitvec_helpers::bitvec_reader::BitVecReader;
 
 pub mod hevc;
 pub mod utils;
@@ -92,7 +94,7 @@ impl HevcParser {
         offsets: &[usize],
         last: usize,
         parse_nals: bool,
-    ) -> Vec<NALUnit> {
+    ) -> Result<Vec<NALUnit>> {
         let count = offsets.len();
 
         let mut nals = Vec::with_capacity(count);
@@ -113,15 +115,21 @@ impl HevcParser {
                 }
             };
 
-            let nal: NALUnit = self.parse_nal(data, *offset, size, parse_nals);
+            let nal = self.parse_nal(data, *offset, size, parse_nals)?;
 
             nals.push(nal);
         }
 
-        nals
+        Ok(nals)
     }
 
-    fn parse_nal(&mut self, data: &[u8], offset: usize, size: usize, parse_nal: bool) -> NALUnit {
+    fn parse_nal(
+        &mut self,
+        data: &[u8],
+        offset: usize,
+        size: usize,
+        parse_nal: bool,
+    ) -> Result<NALUnit> {
         let mut nal = NALUnit::default();
 
         // Assuming [0, 0, 1] header
@@ -155,25 +163,25 @@ impl HevcParser {
             let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..parsing_end]);
             self.reader = BitVecReader::new(bytes);
 
-            self.parse_nal_header(&mut nal);
+            self.parse_nal_header(&mut nal)?;
         } else {
             nal.nal_type = data[pos] >> 1;
         }
 
         if nal.nuh_layer_id > 0 {
-            return nal;
+            return Ok(nal);
         }
 
         if parse_nal {
             match nal.nal_type {
-                NAL_VPS => self.parse_vps(),
-                NAL_SPS => self.parse_sps(),
-                NAL_PPS => self.parse_pps(),
+                NAL_VPS => self.parse_vps()?,
+                NAL_SPS => self.parse_sps()?,
+                NAL_PPS => self.parse_pps()?,
 
                 NAL_TRAIL_R | NAL_TRAIL_N | NAL_TSA_N | NAL_TSA_R | NAL_STSA_N | NAL_STSA_R
                 | NAL_BLA_W_LP | NAL_BLA_W_RADL | NAL_BLA_N_LP | NAL_IDR_W_RADL | NAL_IDR_N_LP
                 | NAL_CRA_NUT | NAL_RADL_N | NAL_RADL_R | NAL_RASL_N | NAL_RASL_R => {
-                    self.parse_slice(&mut nal);
+                    self.parse_slice(&mut nal)?;
 
                     self.current_frame.nals.push(nal.clone());
                 }
@@ -192,12 +200,12 @@ impl HevcParser {
             self.nals.push(nal.clone());
         }
 
-        nal
+        Ok(nal)
     }
 
-    fn parse_nal_header(&mut self, nal: &mut NALUnit) {
+    fn parse_nal_header(&mut self, nal: &mut NALUnit) -> Result<()> {
         // forbidden_zero_bit
-        self.reader.get();
+        self.reader.get()?;
 
         nal.nal_type = self.reader.get_n(6);
 
@@ -206,32 +214,40 @@ impl HevcParser {
             nal.nuh_layer_id = self.reader.get_n(6);
             nal.temporal_id = self.reader.get_n::<u8>(3) - 1;
         }
+
+        Ok(())
     }
 
-    fn parse_vps(&mut self) {
-        let vps = VPSNAL::parse(&mut self.reader);
+    fn parse_vps(&mut self) -> Result<()> {
+        let vps = VPSNAL::parse(&mut self.reader)?;
 
         self.remove_vps(&vps);
 
         self.vps.push(vps);
+
+        Ok(())
     }
 
-    fn parse_sps(&mut self) {
-        let sps = SPSNAL::parse(&mut self.reader);
+    fn parse_sps(&mut self) -> Result<()> {
+        let sps = SPSNAL::parse(&mut self.reader)?;
         self.remove_sps(&sps);
 
         self.sps.push(sps);
+
+        Ok(())
     }
 
-    fn parse_pps(&mut self) {
-        let pps = PPSNAL::parse(&mut self.reader);
+    fn parse_pps(&mut self) -> Result<()> {
+        let pps = PPSNAL::parse(&mut self.reader)?;
 
         self.remove_pps(&pps);
 
         self.pps.push(pps);
+
+        Ok(())
     }
 
-    fn parse_slice(&mut self, nal: &mut NALUnit) {
+    fn parse_slice(&mut self, nal: &mut NALUnit) -> Result<()> {
         let slice = SliceNAL::parse(
             &mut self.reader,
             &self.sps,
@@ -239,7 +255,7 @@ impl HevcParser {
             nal,
             &mut self.poc_tid0,
             &mut self.poc,
-        );
+        )?;
 
         // Consecutive slice NALs cases
         if self.current_frame.first_slice.first_slice_in_pic_flag && slice.first_slice_in_pic_flag {
@@ -256,6 +272,8 @@ impl HevcParser {
 
             self.current_frame.decoded_number = self.decoded_index;
         }
+
+        Ok(())
     }
 
     fn remove_vps(&mut self, vps: &VPSNAL) {

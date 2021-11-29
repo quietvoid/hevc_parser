@@ -1,6 +1,7 @@
-use super::BitVecReader;
+use anyhow::Result;
 
 use super::hrd_parameters::HrdParameters;
+use super::BitVecReader;
 
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct VuiParameters {
@@ -52,9 +53,9 @@ pub struct VuiParameters {
 }
 
 impl VuiParameters {
-    pub fn parse(bs: &mut BitVecReader, max_sub_layers: u8) -> VuiParameters {
+    pub fn parse(bs: &mut BitVecReader, max_sub_layers: u8) -> Result<VuiParameters> {
         let mut vui = VuiParameters {
-            sar_present: bs.get(),
+            sar_present: bs.get()?,
             ..Default::default()
         };
 
@@ -67,16 +68,16 @@ impl VuiParameters {
             }
         }
 
-        vui.overscan_info_present_flag = bs.get();
+        vui.overscan_info_present_flag = bs.get()?;
         if vui.overscan_info_present_flag {
-            vui.overscan_appropriate_flag = bs.get();
+            vui.overscan_appropriate_flag = bs.get()?;
         }
 
-        vui.video_signal_type_present_flag = bs.get();
+        vui.video_signal_type_present_flag = bs.get()?;
         if vui.video_signal_type_present_flag {
             vui.video_format = bs.get_n(3);
-            vui.video_full_range_flag = bs.get();
-            vui.colour_description_present_flag = bs.get();
+            vui.video_full_range_flag = bs.get()?;
+            vui.colour_description_present_flag = bs.get()?;
 
             if vui.colour_description_present_flag {
                 vui.colour_primaries = bs.get_n(8);
@@ -85,53 +86,53 @@ impl VuiParameters {
             }
         }
 
-        vui.chroma_loc_info_present_flag = bs.get();
+        vui.chroma_loc_info_present_flag = bs.get()?;
         if vui.chroma_loc_info_present_flag {
-            vui.chroma_sample_loc_type_top_field = bs.get_ue();
-            vui.chroma_sample_loc_type_bottom_field = bs.get_ue();
+            vui.chroma_sample_loc_type_top_field = bs.get_ue()?;
+            vui.chroma_sample_loc_type_bottom_field = bs.get_ue()?;
         }
 
-        vui.neutral_chroma_indication_flag = bs.get();
-        vui.field_seq_flag = bs.get();
-        vui.frame_field_info_present_flag = bs.get();
-        vui.default_display_window_flag = bs.get();
+        vui.neutral_chroma_indication_flag = bs.get()?;
+        vui.field_seq_flag = bs.get()?;
+        vui.frame_field_info_present_flag = bs.get()?;
+        vui.default_display_window_flag = bs.get()?;
 
         if vui.default_display_window_flag {
-            vui.def_disp_win_left_offset = bs.get_ue();
-            vui.def_disp_win_right_offset = bs.get_ue();
-            vui.def_disp_win_top_offset = bs.get_ue();
-            vui.def_disp_win_bottom_offset = bs.get_ue();
+            vui.def_disp_win_left_offset = bs.get_ue()?;
+            vui.def_disp_win_right_offset = bs.get_ue()?;
+            vui.def_disp_win_top_offset = bs.get_ue()?;
+            vui.def_disp_win_bottom_offset = bs.get_ue()?;
         }
 
-        vui.vui_timing_info_present_flag = bs.get();
+        vui.vui_timing_info_present_flag = bs.get()?;
         if vui.vui_timing_info_present_flag {
             vui.vui_num_units_in_tick = bs.get_n(32);
             vui.vui_time_scale = bs.get_n(32);
 
-            vui.vui_poc_proportional_to_timing_flag = bs.get();
+            vui.vui_poc_proportional_to_timing_flag = bs.get()?;
             if vui.vui_poc_proportional_to_timing_flag {
-                vui.vui_num_ticks_poc_diff_one_minus1 = bs.get_ue();
+                vui.vui_num_ticks_poc_diff_one_minus1 = bs.get_ue()?;
             }
 
-            vui.vui_hrd_parameters_present_flag = bs.get();
+            vui.vui_hrd_parameters_present_flag = bs.get()?;
             if vui.vui_hrd_parameters_present_flag {
-                HrdParameters::parse(bs, true, max_sub_layers);
+                HrdParameters::parse(bs, true, max_sub_layers)?;
             }
         }
 
-        vui.bitstream_restriction_flag = bs.get();
+        vui.bitstream_restriction_flag = bs.get()?;
         if vui.bitstream_restriction_flag {
-            vui.tiles_fixed_structure_flag = bs.get();
-            vui.motion_vectors_over_pic_boundaries_flag = bs.get();
-            vui.restricted_ref_pic_lists_flag = bs.get();
+            vui.tiles_fixed_structure_flag = bs.get()?;
+            vui.motion_vectors_over_pic_boundaries_flag = bs.get()?;
+            vui.restricted_ref_pic_lists_flag = bs.get()?;
 
-            vui.min_spatial_segmentation_idc = bs.get_ue();
-            vui.max_bytes_per_pic_denom = bs.get_ue();
-            vui.max_bits_per_min_cu_denom = bs.get_ue();
-            vui.log2_max_mv_length_horizontal = bs.get_ue();
-            vui.log2_max_mv_length_vertical = bs.get_ue();
+            vui.min_spatial_segmentation_idc = bs.get_ue()?;
+            vui.max_bytes_per_pic_denom = bs.get_ue()?;
+            vui.max_bits_per_min_cu_denom = bs.get_ue()?;
+            vui.log2_max_mv_length_horizontal = bs.get_ue()?;
+            vui.log2_max_mv_length_vertical = bs.get_ue()?;
         }
 
-        vui
+        Ok(vui)
     }
 }
