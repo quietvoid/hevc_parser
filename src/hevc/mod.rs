@@ -77,8 +77,8 @@ pub struct SeiMessage {
     num_payload_size_ff_bytes: usize,
     last_payload_size_byte: u8,
 
-    payload_type: u8,
-    payload_size: usize,
+    pub payload_type: u8,
+    pub payload_size: usize,
 }
 
 impl SeiMessage {
@@ -104,36 +104,30 @@ impl SeiMessage {
             reader.skip_n(3); // temporal_id
         }
 
-        let mut msg;
+        let mut msg = SeiMessage::default();
 
-        loop {
-            msg = SeiMessage::default();
-
+        msg.last_payload_type_byte = reader.get_n(8);
+        while msg.last_payload_type_byte == 0xFF {
+            msg.num_payload_type_ff_bytes += 1;
             msg.last_payload_type_byte = reader.get_n(8);
-            while msg.last_payload_type_byte == 0xFF {
-                msg.num_payload_type_ff_bytes += 1;
-                msg.last_payload_type_byte = reader.get_n(8);
 
-                msg.payload_type += 255;
-            }
+            msg.payload_type += 255;
+        }
 
-            msg.payload_type += msg.last_payload_type_byte;
+        msg.payload_type += msg.last_payload_type_byte;
 
+        msg.last_payload_size_byte = reader.get_n(8);
+        while msg.last_payload_size_byte == 0xFF {
+            msg.num_payload_size_ff_bytes += 1;
             msg.last_payload_size_byte = reader.get_n(8);
-            while msg.last_payload_size_byte == 0xFF {
-                msg.num_payload_size_ff_bytes += 1;
-                msg.last_payload_size_byte = reader.get_n(8);
 
-                msg.payload_size += 255;
-            }
+            msg.payload_size += 255;
+        }
 
-            msg.payload_size += msg.last_payload_size_byte as usize;
+        msg.payload_size += msg.last_payload_size_byte as usize;
 
-            reader.skip_n(msg.payload_size * 8);
-
-            if reader.available() <= 8 || reader.get_n::<u8>(8) == 0x80 {
-                break;
-            }
+        if msg.payload_size > reader.available() {
+            bail!("Payload size is larger than NALU size");
         }
 
         Ok(msg)
