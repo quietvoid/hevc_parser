@@ -372,6 +372,12 @@ impl HevcParser {
         self.reorder_frames();
     }
 
+    /// Processed frames in the current GOP
+    /// Cleared every key frame
+    pub fn processed_frames(&self) -> &Vec<Frame> {
+        &self.frames
+    }
+
     pub fn ordered_frames(&self) -> &Vec<Frame> {
         &self.ordered_frames
     }
