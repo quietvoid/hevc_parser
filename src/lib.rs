@@ -197,6 +197,17 @@ impl HevcParser {
                 }
             };
 
+            // Parameter sets also mean a new frame
+            match nal.nal_type {
+                NAL_VPS | NAL_SPS | NAL_PPS => {
+                    self.add_current_frame();
+
+                    nal.decoded_frame_index = self.decoded_index;
+                    self.current_frame.nals.push(nal.clone());
+                }
+                _ => ()
+            };
+
             self.nals.push(nal.clone());
         }
 
