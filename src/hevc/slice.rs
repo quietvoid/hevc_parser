@@ -40,10 +40,10 @@ impl SliceNAL {
         slice.pps_id = bs.get_ue()?;
         let pps = pps_list
             .get(slice.pps_id as usize)
-            .ok_or(format_err!("Invalid PPS index"))?;
+            .ok_or_else(|| format_err!("Invalid PPS index"))?;
         let sps = sps_list
             .get(pps.sps_id as usize)
-            .ok_or(format_err!("Invalid SPS index"))?;
+            .ok_or_else(|| format_err!("Invalid SPS index"))?;
 
         if !slice.first_slice_in_pic_flag {
             if pps.dependent_slice_segments_enabled_flag {

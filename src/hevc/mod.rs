@@ -104,9 +104,11 @@ impl SeiMessage {
             reader.skip_n(3); // temporal_id
         }
 
-        let mut msg = SeiMessage::default();
+        let mut msg = SeiMessage {
+            last_payload_type_byte: reader.get_n(8),
+            ..Default::default()
+        };
 
-        msg.last_payload_type_byte = reader.get_n(8);
         while msg.last_payload_type_byte == 0xFF {
             msg.num_payload_type_ff_bytes += 1;
             msg.last_payload_type_byte = reader.get_n(8);

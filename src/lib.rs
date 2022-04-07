@@ -205,7 +205,7 @@ impl HevcParser {
                     nal.decoded_frame_index = self.decoded_index;
                     self.current_frame.nals.push(nal.clone());
                 }
-                _ => ()
+                _ => (),
             };
 
             self.nals.push(nal.clone());
