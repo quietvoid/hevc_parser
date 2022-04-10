@@ -9,6 +9,6 @@ description = "HEVC format parser, incomplete"
 repository = "https://github.com/quietvoid/hevc_parser"
 
 [dependencies]
-nom = "7.1.0"
-bitvec_helpers = "1.0.1"
-anyhow = "1.0.52"
+nom = "7.1.1"
+bitvec_helpers = "1.0.2"
+anyhow = "1.0.56"
