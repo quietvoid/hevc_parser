@@ -6,6 +6,9 @@ use bitvec_helpers::bitvec_reader::BitVecReader;
 pub mod hevc;
 pub mod utils;
 
+#[cfg(feature = "hevc_io")]
+pub mod io;
+
 use hevc::*;
 use pps::PPSNAL;
 use slice::SliceNAL;
@@ -22,6 +25,7 @@ const HEADER_LEN_4: usize = 4;
 const NAL_START_CODE_3: &[u8] = &[0, 0, 1];
 const NAL_START_CODE_4: &[u8] = &[0, 0, 0, 1];
 
+#[derive(Debug, Copy, Clone)]
 pub enum NALUStartCode {
     Length3,
     Length4,
@@ -64,10 +68,7 @@ impl HevcParser {
 
         let mut consumed = 0;
 
-        let nal_start_tag = match &self.nalu_start_code {
-            NALUStartCode::Length3 => NAL_START_CODE_3,
-            NALUStartCode::Length4 => NAL_START_CODE_4,
-        };
+        let nal_start_tag = self.nalu_start_code.slice();
 
         loop {
             match Self::take_until_nal(nal_start_tag, &data[consumed..]) {
@@ -78,10 +79,7 @@ impl HevcParser {
                     offsets.push(consumed);
 
                     // nom consumes the tag, so add it back
-                    consumed += match &self.nalu_start_code {
-                        NALUStartCode::Length3 => HEADER_LEN_3,
-                        NALUStartCode::Length4 => HEADER_LEN_4,
-                    };
+                    consumed += self.nalu_start_code.size();
                 }
                 _ => return,
             }
@@ -147,17 +145,22 @@ impl HevcParser {
         nal.end = end;
         nal.decoded_frame_index = self.decoded_index;
 
-        nal.start_code_len = if offset > 0 {
+        nal.start_code = if offset > 0 {
             // Previous byte is 0, offset..offset + 3 is [0, 0, 1]
             // Actual start code is length 4
             if data[offset - 1] == 0 {
-                4
+                NALUStartCode::Length4
             } else {
-                3
+                NALUStartCode::Length3
             }
         } else {
-            3
+            NALUStartCode::Length3
         };
+
+        #[allow(deprecated)]
+        {
+            nal.start_code_len = nal.start_code.size() as u8;
+        }
 
         if parse_nal {
             let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..parsing_end]);
@@ -402,5 +405,21 @@ impl HevcParser {
 impl Default for NALUStartCode {
     fn default() -> Self {
         NALUStartCode::Length3
+    }
+}
+
+impl NALUStartCode {
+    pub fn slice(&self) -> &[u8] {
+        match self {
+            NALUStartCode::Length3 => NAL_START_CODE_3,
+            NALUStartCode::Length4 => NAL_START_CODE_4,
+        }
+    }
+
+    pub fn size(&self) -> usize {
+        match self {
+            NALUStartCode::Length3 => HEADER_LEN_3,
+            NALUStartCode::Length4 => HEADER_LEN_4,
+        }
     }
 }

@@ -6,6 +6,7 @@ use super::short_term_rps::ShortTermRPS;
 use super::vui_parameters::VuiParameters;
 use super::BitVecReader;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Debug, PartialEq, Clone)]
 pub struct SPSNAL {
     pub(crate) vps_id: u8,

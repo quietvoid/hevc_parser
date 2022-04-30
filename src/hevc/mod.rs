@@ -2,7 +2,7 @@ use anyhow::{bail, Result};
 
 use self::slice::SliceNAL;
 
-use super::BitVecReader;
+use super::{BitVecReader, NALUStartCode};
 
 pub(crate) mod hrd_parameters;
 pub(crate) mod pps;
@@ -54,6 +54,10 @@ pub struct NALUnit {
     pub nal_type: u8,
     pub nuh_layer_id: u8,
     pub temporal_id: u8,
+
+    pub start_code: NALUStartCode,
+
+    #[deprecated(since = "0.4.0", note = "Please use `start_code` instead")]
     pub start_code_len: u8,
 
     pub decoded_frame_index: u64,
