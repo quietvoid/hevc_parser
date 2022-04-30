@@ -1,4 +1,4 @@
-use anyhow::{bail, Result};
+use anyhow::Result;
 use std::io::Read;
 
 use super::{HevcParser, IoFormat, IoProcessor};
@@ -93,21 +93,17 @@ impl HevcProcessor {
                 self.chunk.extend_from_slice(&self.main_buf[..read_bytes]);
 
                 loop {
-                    match reader.read(&mut self.sec_buf) {
-                        Ok(num) => {
-                            if num > 0 {
-                                read_bytes += num;
+                    let num = reader.read(&mut self.sec_buf)?;
+                    if num > 0 {
+                        read_bytes += num;
 
-                                self.chunk.extend_from_slice(&self.sec_buf[..num]);
+                        self.chunk.extend_from_slice(&self.sec_buf[..num]);
 
-                                if read_bytes >= self.chunk_size {
-                                    break;
-                                }
-                            } else {
-                                break;
-                            }
+                        if read_bytes >= self.chunk_size {
+                            break;
                         }
-                        Err(e) => bail!("{:?}", e),
+                    } else {
+                        break;
                     }
                 }
             } else if read_bytes < self.chunk_size {
