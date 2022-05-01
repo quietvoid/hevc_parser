@@ -24,11 +24,13 @@ pub struct HevcProcessor {
 }
 
 /// Options for the processor
-#[derive(Default)]
 pub struct HevcProcessorOpts {
     /// Buffer a frame when using `parse_nalus`.
     /// This stops the stream reading as soon as a full frame has been parsed.
     pub buffer_frame: bool,
+    /// Parse the NALs, required for `buffer_frame`
+    /// Provides frame presentation order
+    pub parse_nals: bool,
 }
 
 impl HevcProcessor {
@@ -129,9 +131,9 @@ impl HevcProcessor {
                 last
             };
 
-            let nals = self
-                .parser
-                .split_nals(&self.chunk, &self.offsets, last, true)?;
+            let nals =
+                self.parser
+                    .split_nals(&self.chunk, &self.offsets, last, self.opts.parse_nals)?;
 
             // Process NALUs
             processor.process_nals(&self.parser, &nals, &self.chunk)?;
@@ -165,5 +167,14 @@ impl HevcProcessor {
         }
 
         Ok(())
+    }
+}
+
+impl Default for HevcProcessorOpts {
+    fn default() -> Self {
+        Self {
+            buffer_frame: false,
+            parse_nals: true,
+        }
     }
 }
