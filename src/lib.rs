@@ -409,14 +409,14 @@ impl Default for NALUStartCode {
 }
 
 impl NALUStartCode {
-    pub fn slice(&self) -> &[u8] {
+    pub const fn slice(&self) -> &[u8] {
         match self {
             NALUStartCode::Length3 => NAL_START_CODE_3,
             NALUStartCode::Length4 => NAL_START_CODE_4,
         }
     }
 
-    pub fn size(&self) -> usize {
+    pub const fn size(&self) -> usize {
         match self {
             NALUStartCode::Length3 => HEADER_LEN_3,
             NALUStartCode::Length4 => HEADER_LEN_4,
