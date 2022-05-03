@@ -139,3 +139,30 @@ impl SeiMessage {
         Ok(msg)
     }
 }
+
+impl NALUnit {
+    pub fn is_type_slice(nal_type: u8) -> bool {
+        matches!(
+            nal_type,
+            NAL_TRAIL_R
+                | NAL_TRAIL_N
+                | NAL_TSA_N
+                | NAL_TSA_R
+                | NAL_STSA_N
+                | NAL_STSA_R
+                | NAL_BLA_W_LP
+                | NAL_BLA_W_RADL
+                | NAL_BLA_N_LP
+                | NAL_IDR_W_RADL
+                | NAL_IDR_N_LP
+                | NAL_CRA_NUT
+                | NAL_RADL_N
+                | NAL_RADL_R
+                | NAL_RASL_N
+                | NAL_RASL_R
+        )
+    }
+    pub fn is_slice(&self) -> bool {
+        Self::is_type_slice(self.nal_type)
+    }
+}

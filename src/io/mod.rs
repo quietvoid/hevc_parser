@@ -33,6 +33,7 @@ pub trait IoProcessor {
 }
 
 /// Data for a frame, with its decoded index
+#[derive(Debug, Clone)]
 pub struct FrameBuffer {
     pub frame_number: u64,
     pub nals: Vec<NalBuffer>,
@@ -40,6 +41,7 @@ pub struct FrameBuffer {
 
 /// Data for a NALU, with type
 /// The data does not include the start code
+#[derive(Debug, Clone)]
 pub struct NalBuffer {
     pub nal_type: u8,
     pub start_code: NALUStartCode,
