@@ -1,17 +1,28 @@
-use std::path::{Path, PathBuf};
+use std::{
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{bail, format_err, Result};
 use regex::Regex;
 
 pub mod processor;
 
-use super::{HevcParser, NALUStartCode, NALUnit};
+use super::{hevc::*, HevcParser, NALUStartCode, NALUnit};
+
+pub const FOUR_SIZED_NALU_TYPES: &[u8] = &[NAL_VPS, NAL_SPS, NAL_PPS, NAL_AUD, NAL_UNSPEC62];
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum IoFormat {
     Raw,
     RawStdin,
     Matroska,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum StartCodePreset {
+    Four,
+    AnnexB,
 }
 
 pub trait IoProcessor {
@@ -81,5 +92,31 @@ impl std::fmt::Display for IoFormat {
             IoFormat::Raw => write!(f, "HEVC file"),
             IoFormat::RawStdin => write!(f, "HEVC pipe"),
         }
+    }
+}
+
+impl NALUnit {
+    pub fn write_with_preset(
+        writer: &mut dyn Write,
+        data: &[u8],
+        preset: StartCodePreset,
+        nal_type: u8,
+        first_nal: bool,
+    ) -> Result<()> {
+        let start_code = match preset {
+            StartCodePreset::Four => NALUStartCode::Length4,
+            StartCodePreset::AnnexB => {
+                if FOUR_SIZED_NALU_TYPES.contains(&nal_type) || first_nal {
+                    NALUStartCode::Length4
+                } else {
+                    NALUStartCode::Length3
+                }
+            }
+        };
+
+        writer.write_all(start_code.slice())?;
+        writer.write_all(data)?;
+
+        Ok(())
     }
 }

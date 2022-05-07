@@ -162,6 +162,7 @@ impl NALUnit {
                 | NAL_RASL_R
         )
     }
+
     pub fn is_slice(&self) -> bool {
         Self::is_type_slice(self.nal_type)
     }
