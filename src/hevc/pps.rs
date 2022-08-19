@@ -2,7 +2,7 @@ use super::{scaling_list_data::ScalingListData, BitVecReader};
 use anyhow::Result;
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct PPSNAL {
     pub(crate) pps_id: u64,
     pub(crate) sps_id: u64,

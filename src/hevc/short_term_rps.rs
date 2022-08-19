@@ -3,7 +3,7 @@ use anyhow::Result;
 use super::sps::SPSNAL;
 use super::BitVecReader;
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct ShortTermRPS {
     inter_ref_pic_set_prediction_flag: bool,
     delta_idx: u64,

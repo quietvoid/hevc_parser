@@ -3,7 +3,7 @@ use std::cmp::min;
 
 use super::BitVecReader;
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct ScalingListData {
     scaling_list_pred_mode_flag: Vec<Vec<bool>>,
     scaling_list_pred_matrix_id_delta: Vec<Vec<u64>>,

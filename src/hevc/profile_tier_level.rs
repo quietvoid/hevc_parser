@@ -1,7 +1,7 @@
 use super::BitVecReader;
 use anyhow::Result;
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct ProfileTierLevel {
     pub general_profile_space: u8,
     pub general_tier_flag: bool,

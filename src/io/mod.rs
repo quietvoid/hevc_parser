@@ -12,7 +12,7 @@ use super::{hevc::*, HevcParser, NALUStartCode, NALUnit};
 
 pub const FOUR_SIZED_NALU_TYPES: &[u8] = &[NAL_VPS, NAL_SPS, NAL_PPS, NAL_AUD, NAL_UNSPEC62];
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Eq)]
 pub enum IoFormat {
     Raw,
     RawStdin,

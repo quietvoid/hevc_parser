@@ -3,7 +3,7 @@ use anyhow::Result;
 use super::hrd_parameters::HrdParameters;
 use super::BitVecReader;
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct VuiParameters {
     sar_present: bool,
     sar_idx: u8,

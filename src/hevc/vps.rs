@@ -5,7 +5,7 @@ use super::profile_tier_level::ProfileTierLevel;
 use super::BitVecReader;
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct VPSNAL {
     pub(crate) vps_id: u8,
     vps_max_layers: u8,

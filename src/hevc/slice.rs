@@ -4,7 +4,7 @@ use super::BitVecReader;
 use super::*;
 use super::{pps::PPSNAL, sps::SPSNAL, NALUnit};
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct SliceNAL {
     pub first_slice_in_pic_flag: bool,
     pub key_frame: bool,
