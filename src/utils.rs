@@ -9,7 +9,7 @@ pub fn clear_start_code_emulation_prevention_3_byte(data: &[u8]) -> Vec<u8> {
                 && index < data.len() - 2
                 && data[index - 2] == 0
                 && data[index - 1] == 0
-                && data[index] <= 3
+                && data[index] == 3
             {
                 None
             } else {
@@ -19,6 +19,10 @@ pub fn clear_start_code_emulation_prevention_3_byte(data: &[u8]) -> Vec<u8> {
         .collect::<Vec<u8>>()
 }
 
+/// Within the NAL unit, the following three-byte sequences shall not occur at any byte-aligned position:
+///   - 0x000000
+///   - 0x000001
+///   - 0x000002
 pub fn add_start_code_emulation_prevention_3_byte(data: &mut Vec<u8>) {
     let mut count = data.len();
     let mut i = 0;
