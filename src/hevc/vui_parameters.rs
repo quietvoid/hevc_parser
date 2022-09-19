@@ -60,11 +60,11 @@ impl VuiParameters {
         };
 
         if vui.sar_present {
-            vui.sar_idx = bs.get_n(8);
+            vui.sar_idx = bs.get_n(8)?;
 
             if vui.sar_idx == 255 {
-                vui.sar_num = bs.get_n(16);
-                vui.sar_den = bs.get_n(16);
+                vui.sar_num = bs.get_n(16)?;
+                vui.sar_den = bs.get_n(16)?;
             }
         }
 
@@ -75,14 +75,14 @@ impl VuiParameters {
 
         vui.video_signal_type_present_flag = bs.get()?;
         if vui.video_signal_type_present_flag {
-            vui.video_format = bs.get_n(3);
+            vui.video_format = bs.get_n(3)?;
             vui.video_full_range_flag = bs.get()?;
             vui.colour_description_present_flag = bs.get()?;
 
             if vui.colour_description_present_flag {
-                vui.colour_primaries = bs.get_n(8);
-                vui.transfer_characteristic = bs.get_n(8);
-                vui.matrix_coeffs = bs.get_n(8);
+                vui.colour_primaries = bs.get_n(8)?;
+                vui.transfer_characteristic = bs.get_n(8)?;
+                vui.matrix_coeffs = bs.get_n(8)?;
             }
         }
 
@@ -106,8 +106,8 @@ impl VuiParameters {
 
         vui.vui_timing_info_present_flag = bs.get()?;
         if vui.vui_timing_info_present_flag {
-            vui.vui_num_units_in_tick = bs.get_n(32);
-            vui.vui_time_scale = bs.get_n(32);
+            vui.vui_num_units_in_tick = bs.get_n(32)?;
+            vui.vui_time_scale = bs.get_n(32)?;
 
             vui.vui_poc_proportional_to_timing_flag = bs.get()?;
             if vui.vui_poc_proportional_to_timing_flag {

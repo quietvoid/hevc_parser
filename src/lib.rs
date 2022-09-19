@@ -222,12 +222,12 @@ impl HevcParser {
         // forbidden_zero_bit
         self.reader.get()?;
 
-        nal.nal_type = self.reader.get_n(6);
+        nal.nal_type = self.reader.get_n(6)?;
 
         if self.reader.available() < 9 && matches!(nal.nal_type, NAL_EOS_NUT | NAL_EOB_NUT) {
         } else {
-            nal.nuh_layer_id = self.reader.get_n(6);
-            nal.temporal_id = self.reader.get_n::<u8>(3) - 1;
+            nal.nuh_layer_id = self.reader.get_n(6)?;
+            nal.temporal_id = self.reader.get_n::<u8>(3)? - 1;
         }
 
         Ok(())

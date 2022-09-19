@@ -61,7 +61,7 @@ impl PPSNAL {
 
         pps.dependent_slice_segments_enabled_flag = bs.get()?;
         pps.output_flag_present_flag = bs.get()?;
-        pps.num_extra_slice_header_bits = bs.get_n(3);
+        pps.num_extra_slice_header_bits = bs.get_n(3)?;
         pps.sign_data_hiding_flag = bs.get()?;
         pps.cabac_init_present_flag = bs.get()?;
         pps.num_ref_idx_l0_default_active = bs.get_ue()? + 1;

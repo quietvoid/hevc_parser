@@ -88,11 +88,11 @@ pub struct SPSNAL {
 impl SPSNAL {
     pub fn parse(bs: &mut BitVecReader) -> Result<SPSNAL> {
         let mut sps = SPSNAL {
-            vps_id: bs.get_n(4),
+            vps_id: bs.get_n(4)?,
             ..Default::default()
         };
 
-        sps.max_sub_layers = bs.get_n::<u8>(3) + 1;
+        sps.max_sub_layers = bs.get_n::<u8>(3)? + 1;
         sps.temporal_id_nesting_flag = bs.get()?;
 
         sps.ptl.parse(bs, sps.max_sub_layers)?;
@@ -165,8 +165,8 @@ impl SPSNAL {
         sps.pcm_enabled_flag = bs.get()?;
 
         if sps.pcm_enabled_flag {
-            sps.pcm_bit_depth = bs.get_n::<u8>(4) + 1;
-            sps.pcm_bit_depth_chroma = bs.get_n::<u8>(4) + 1;
+            sps.pcm_bit_depth = bs.get_n::<u8>(4)? + 1;
+            sps.pcm_bit_depth_chroma = bs.get_n::<u8>(4)? + 1;
             sps.pcm_log2_min_pcm_cb_size = bs.get_ue()? + 3;
             sps.pcm_log2_max_pcm_cb_size = bs.get_ue()? + sps.pcm_log2_min_pcm_cb_size;
 
@@ -189,7 +189,7 @@ impl SPSNAL {
 
             for _ in 0..sps.num_long_term_ref_pics_sps {
                 sps.lt_ref_pic_poc_lsb_sps
-                    .push(bs.get_n(sps.log2_max_poc_lsb as usize));
+                    .push(bs.get_n(sps.log2_max_poc_lsb as usize)?);
                 sps.used_by_curr_pic_lt_sps_flag.push(bs.get()?);
             }
         }

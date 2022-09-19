@@ -16,7 +16,7 @@ pub struct VPSNAL {
     vps_max_dec_pic_buffering: Vec<u64>,
     vps_num_reorder_pics: Vec<u64>,
     vps_max_latency_increase: Vec<u64>,
-    vps_max_layer_id: u64,
+    vps_max_layer_id: u8,
     vps_num_layer_sets: u64,
     vps_timing_info_present_flag: bool,
     vps_num_units_in_tick: u32,
@@ -29,19 +29,19 @@ pub struct VPSNAL {
 impl VPSNAL {
     pub fn parse(bs: &mut BitVecReader) -> Result<VPSNAL> {
         let mut vps = VPSNAL {
-            vps_id: bs.get_n(4),
+            vps_id: bs.get_n(4)?,
             ..Default::default()
         };
 
         // vps_reserved_three_2bits
-        assert!(bs.get_n::<u8>(2) == 3);
+        assert!(bs.get_n::<u8>(2)? == 3);
 
-        vps.vps_max_layers = bs.get_n::<u8>(6) + 1;
-        vps.vps_max_sub_layers = bs.get_n::<u8>(3) + 1;
+        vps.vps_max_layers = bs.get_n::<u8>(6)? + 1;
+        vps.vps_max_sub_layers = bs.get_n::<u8>(3)? + 1;
         vps.vps_temporal_id_nesting_flag = bs.get()?;
 
         // vps_reserved_ffff_16bits
-        assert!(bs.get_n::<u32>(16) == 0xFFFF);
+        assert!(bs.get_n::<u32>(16)? == 0xFFFF);
 
         vps.ptl.parse(bs, vps.vps_max_sub_layers)?;
 
@@ -65,20 +65,20 @@ impl VPSNAL {
             vps.vps_max_latency_increase.push(vps_max_latency_increase);
         }
 
-        vps.vps_max_layer_id = bs.get_n(6);
+        vps.vps_max_layer_id = bs.get_n(6)?;
         vps.vps_num_layer_sets = bs.get_ue()? + 1;
 
         for _ in 1..vps.vps_num_layer_sets {
             for _ in 0..=vps.vps_max_layer_id {
-                bs.skip_n(1); // layer_id_included_flag[i][j]
+                bs.skip_n(1)?; // layer_id_included_flag[i][j]
             }
         }
 
         vps.vps_timing_info_present_flag = bs.get()?;
 
         if vps.vps_timing_info_present_flag {
-            vps.vps_num_units_in_tick = bs.get_n(32);
-            vps.vps_time_scale = bs.get_n(32);
+            vps.vps_num_units_in_tick = bs.get_n(32)?;
+            vps.vps_time_scale = bs.get_n(32)?;
             vps.vps_poc_proportional_to_timing_flag = bs.get()?;
 
             if vps.vps_poc_proportional_to_timing_flag {
@@ -99,7 +99,7 @@ impl VPSNAL {
             }
         }
 
-        bs.skip_n(1); // vps_extension_flag
+        bs.skip_n(1)?; // vps_extension_flag
 
         Ok(vps)
     }

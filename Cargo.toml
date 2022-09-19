@@ -1,6 +1,6 @@
 [package]
 name = "hevc_parser"
-version = "0.4.7"
+version = "0.5.0"
 authors = ["quietvoid"]
 edition = "2021"
 rust-version = "1.56.1"
@@ -10,8 +10,8 @@ repository = "https://github.com/quietvoid/hevc_parser"
 
 [dependencies]
 nom = "7.1.1"
-bitvec_helpers = "1.0.2"
-anyhow = "1.0.62"
+bitvec_helpers = "2.0.0"
+anyhow = "1.0.65"
 
 regex = { version = "1.6.0", optional = true }
 

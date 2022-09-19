@@ -34,7 +34,7 @@ impl SliceNAL {
 
         if is_irap_nal(nal) {
             slice.key_frame = true;
-            bs.skip_n(1); // no_output_of_prior_pics_flag
+            bs.skip_n(1)?; // no_output_of_prior_pics_flag
         }
 
         slice.pps_id = bs.get_ue()?;
@@ -55,7 +55,7 @@ impl SliceNAL {
             let pic_size = (sps.ctb_width * sps.ctb_height) as f64;
             let slice_address_length = pic_size.log2().ceil() as usize;
 
-            slice.slice_segment_addr = bs.get_n(slice_address_length);
+            slice.slice_segment_addr = bs.get_n(slice_address_length)?;
         } else {
             slice.dependent_slice_segment_flag = false;
         }
@@ -65,21 +65,21 @@ impl SliceNAL {
         }
 
         for _ in 0..pps.num_extra_slice_header_bits {
-            bs.skip_n(1); // slice_reserved_undetermined_flag
+            bs.skip_n(1)?; // slice_reserved_undetermined_flag
         }
 
         slice.slice_type = bs.get_ue()?;
 
         if pps.output_flag_present_flag {
-            bs.skip_n(1);
+            bs.skip_n(1)?;
         }
 
         if sps.separate_colour_plane_flag {
-            bs.skip_n(2);
+            bs.skip_n(2)?;
         }
 
         if !is_idr_nal(nal) {
-            slice.pic_order_cnt_lsb = bs.get_n(sps.log2_max_poc_lsb as usize);
+            slice.pic_order_cnt_lsb = bs.get_n(sps.log2_max_poc_lsb as usize)?;
             slice.output_picture_number = compute_poc(sps, *poc_tid0, slice.pic_order_cnt_lsb, nal);
         } else {
             slice.output_picture_number = 0;

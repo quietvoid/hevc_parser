@@ -24,22 +24,22 @@ impl HrdParameters {
                 subpic_params_present = bs.get()?;
 
                 if subpic_params_present {
-                    bs.skip_n(8); // tick_divisor_minus2
-                    bs.skip_n(5); // du_cpb_removal_delay_increment_length_minus1
-                    bs.skip_n(1); // sub_pic_cpb_params_in_pic_timing_sei_flag
-                    bs.skip_n(5); // dpb_output_delay_du_length_minus1
+                    bs.skip_n(8)?; // tick_divisor_minus2
+                    bs.skip_n(5)?; // du_cpb_removal_delay_increment_length_minus1
+                    bs.skip_n(1)?; // sub_pic_cpb_params_in_pic_timing_sei_flag
+                    bs.skip_n(5)?; // dpb_output_delay_du_length_minus1
                 }
 
-                bs.skip_n(4); // bit_rate_scale
-                bs.skip_n(4); // cpb_size_scale
+                bs.skip_n(4)?; // bit_rate_scale
+                bs.skip_n(4)?; // cpb_size_scale
 
                 if subpic_params_present {
-                    bs.skip_n(4); // cpb_size_du_scale
+                    bs.skip_n(4)?; // cpb_size_du_scale
                 }
 
-                bs.skip_n(5); // initial_cpb_removal_delay_length_minus1
-                bs.skip_n(5); // au_cpb_removal_delay_length_minus1
-                bs.skip_n(5); // dpb_output_delay_length_minus1
+                bs.skip_n(5)?; // initial_cpb_removal_delay_length_minus1
+                bs.skip_n(5)?; // au_cpb_removal_delay_length_minus1
+                bs.skip_n(5)?; // dpb_output_delay_length_minus1
             }
         }
 
@@ -86,7 +86,7 @@ impl SubLayerHrdParameter {
                 bs.get_ue()?; // bit_rate_du_value_minus1
             }
 
-            bs.skip_n(1); // cbr_flag
+            bs.skip_n(1)?; // cbr_flag
         }
 
         Ok(())
