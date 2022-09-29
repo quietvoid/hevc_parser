@@ -188,9 +188,10 @@ impl HevcParser {
 
                     self.current_frame.nals.push(nal.clone());
                 }
-                NAL_SEI_SUFFIX | NAL_UNSPEC62 | NAL_UNSPEC63 | NAL_EOS_NUT | NAL_EOB_NUT => {
+                NAL_SEI_SUFFIX | NAL_UNSPEC62 | NAL_UNSPEC63 | NAL_EOS_NUT | NAL_EOB_NUT
+                | NAL_FD_NUT => {
                     // Dolby NALs are suffixed to the slices
-                    // And EOS/EOB should be contained within the current AU
+                    // And EOS, EOB, FD should be contained within the current AU
                     self.current_frame.nals.push(nal.clone());
                 }
                 _ => {
