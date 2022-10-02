@@ -117,6 +117,9 @@ impl HevcProcessor {
             self.parser.get_offsets(&self.chunk, &mut self.offsets);
 
             if self.offsets.is_empty() {
+                if read_bytes == 0 {
+                    break;
+                }
                 continue;
             }
 
