@@ -135,9 +135,7 @@ impl SPSNAL {
             sps.num_reorder_pics.push(bs.get_ue()?);
 
             let mut max_latency_increase = bs.get_ue()?;
-            if max_latency_increase > 0 {
-                max_latency_increase -= 1;
-            }
+            max_latency_increase = max_latency_increase.saturating_sub(1);
 
             sps.max_latency_increase.push(max_latency_increase);
         }

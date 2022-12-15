@@ -58,9 +58,7 @@ impl VPSNAL {
             vps.vps_num_reorder_pics.push(bs.get_ue()?);
 
             let mut vps_max_latency_increase = bs.get_ue()?;
-            if vps_max_latency_increase > 0 {
-                vps_max_latency_increase -= 1;
-            }
+            vps_max_latency_increase = vps_max_latency_increase.saturating_sub(1);
 
             vps.vps_max_latency_increase.push(vps_max_latency_increase);
         }
