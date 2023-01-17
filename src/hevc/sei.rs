@@ -1,6 +1,6 @@
 use super::{NAL_EOB_NUT, NAL_EOS_NUT, NAL_SEI_PREFIX, NAL_SEI_SUFFIX};
 use anyhow::{bail, Result};
-use bitvec_helpers::bitslice_reader::BitSliceReader;
+use bitvec_helpers::bitstream_io_reader::BsIoSliceReader;
 
 #[derive(Default, Debug, Clone)]
 pub struct SeiMessage {
@@ -21,7 +21,7 @@ pub struct SeiMessage {
 impl SeiMessage {
     /// Assumes the data does not contain any `emulation_prevention_three_byte`s
     pub fn parse_sei_rbsp(data: &[u8]) -> Result<Vec<SeiMessage>> {
-        let mut reader = BitSliceReader::new(data);
+        let mut reader = BsIoSliceReader::from_slice(data);
 
         // forbidden_zero_bit
         reader.skip_n(1)?;
@@ -32,7 +32,7 @@ impl SeiMessage {
             bail!("NAL type {} is not SEI", nal_type);
         }
 
-        if reader.available() < 9 && matches!(nal_type, NAL_EOS_NUT | NAL_EOB_NUT) {
+        if reader.available()? < 9 && matches!(nal_type, NAL_EOS_NUT | NAL_EOB_NUT) {
         } else {
             reader.skip_n(6)?; // nuh_layer_id
             reader.skip_n(3)?; // temporal_id
@@ -43,7 +43,7 @@ impl SeiMessage {
         loop {
             messages.push(Self::parse_sei_message(&mut reader)?);
 
-            if reader.available() <= 8 {
+            if reader.available()? <= 8 {
                 break;
             }
         }
@@ -51,9 +51,9 @@ impl SeiMessage {
         Ok(messages)
     }
 
-    fn parse_sei_message(reader: &mut BitSliceReader) -> Result<SeiMessage> {
+    fn parse_sei_message(reader: &mut BsIoSliceReader) -> Result<SeiMessage> {
         let mut msg = SeiMessage {
-            msg_offset: reader.position() / 8,
+            msg_offset: (reader.position()? / 8) as usize,
             last_payload_type_byte: reader.get_n(8)?,
             ..Default::default()
         };
@@ -76,13 +76,13 @@ impl SeiMessage {
         }
 
         msg.payload_size += msg.last_payload_size_byte as usize;
-        msg.payload_offset = reader.position() / 8;
+        msg.payload_offset = (reader.position()? / 8) as usize;
 
-        if msg.payload_size > reader.available() {
+        if msg.payload_size > reader.available()? as usize {
             bail!("Payload size is larger than NALU size");
         }
 
-        reader.skip_n(msg.payload_size * 8)?;
+        reader.skip_n(msg.payload_size as u32 * 8)?;
 
         Ok(msg)
     }

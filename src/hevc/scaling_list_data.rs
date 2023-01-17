@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::cmp::min;
 
-use super::BitVecReader;
+use super::BsIoVecReader;
 
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct ScalingListData {
@@ -12,7 +12,7 @@ pub struct ScalingListData {
 }
 
 impl ScalingListData {
-    pub fn parse(bs: &mut BitVecReader) -> Result<ScalingListData> {
+    pub fn parse(bs: &mut BsIoVecReader) -> Result<ScalingListData> {
         let mut scl = ScalingListData::default();
 
         scl.scaling_list_pred_mode_flag.resize(4, Vec::new());

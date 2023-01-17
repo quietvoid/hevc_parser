@@ -1,7 +1,7 @@
 use anyhow::Result;
 use nom::{bytes::complete::take_until, IResult};
 
-use bitvec_helpers::bitvec_reader::BitVecReader;
+use bitvec_helpers::bitstream_io_reader::BsIoVecReader;
 
 pub mod hevc;
 pub mod utils;
@@ -33,7 +33,7 @@ pub enum NALUStartCode {
 
 #[derive(Default)]
 pub struct HevcParser {
-    reader: BitVecReader,
+    reader: BsIoVecReader,
     pub nalu_start_code: NALUStartCode,
 
     nals: Vec<NALUnit>,
@@ -164,7 +164,7 @@ impl HevcParser {
 
         if parse_nal {
             let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..parsing_end]);
-            self.reader = BitVecReader::new(bytes);
+            self.reader.replace_vec(bytes);
 
             self.parse_nal_header(&mut nal)?;
         } else {
@@ -225,7 +225,7 @@ impl HevcParser {
 
         nal.nal_type = self.reader.get_n(6)?;
 
-        if self.reader.available() < 9 && matches!(nal.nal_type, NAL_EOS_NUT | NAL_EOB_NUT) {
+        if self.reader.available()? < 9 && matches!(nal.nal_type, NAL_EOS_NUT | NAL_EOB_NUT) {
         } else {
             nal.nuh_layer_id = self.reader.get_n(6)?;
             nal.temporal_id = self.reader.get_n::<u8>(3)? - 1;

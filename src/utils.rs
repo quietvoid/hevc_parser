@@ -1,22 +1,26 @@
+use anyhow::{anyhow, Result};
+use bitvec_helpers::bitstream_io_writer::BitstreamIoWriter;
+
 use super::{Frame, NALUStartCode, NAL_AUD};
-use bitvec_helpers::bitvec_writer::BitVecWriter;
+
+const THREE_BYTE_SLICE: &[u8] = &[0, 0, 3];
 
 pub fn clear_start_code_emulation_prevention_3_byte(data: &[u8]) -> Vec<u8> {
-    data.iter()
-        .enumerate()
-        .filter_map(|(index, value)| {
-            if index > 2
-                && index < data.len() - 2
-                && data[index - 2] == 0
-                && data[index - 1] == 0
-                && data[index] == 3
-            {
-                None
-            } else {
-                Some(*value)
-            }
-        })
-        .collect::<Vec<u8>>()
+    let len = data.len();
+    let mut unescaped_bytes: Vec<u8> = Vec::with_capacity(len);
+
+    let mut i = 0;
+    while i < len {
+        let is_emulation_prevention_3_byte = i > 2 && matches!(&data[i - 2..=i], THREE_BYTE_SLICE);
+
+        if !is_emulation_prevention_3_byte {
+            unescaped_bytes.push(data[i]);
+        }
+
+        i += 1;
+    }
+
+    unescaped_bytes
 }
 
 /// Within the NAL unit, the following three-byte sequences shall not occur at any byte-aligned position:
@@ -37,7 +41,7 @@ pub fn add_start_code_emulation_prevention_3_byte(data: &mut Vec<u8>) {
     }
 }
 
-pub fn aud_for_frame(frame: &Frame, start_code: Option<NALUStartCode>) -> Vec<u8> {
+pub fn aud_for_frame(frame: &Frame, start_code: Option<NALUStartCode>) -> Result<Vec<u8>> {
     let pic_type: u8 = match &frame.frame_type {
         2 => 0, // I
         1 => 1, // P, I
@@ -51,24 +55,27 @@ pub fn aud_for_frame(frame: &Frame, start_code: Option<NALUStartCode>) -> Vec<u8
         Vec::new()
     };
 
-    let mut writer = BitVecWriter::new();
+    let mut writer = BitstreamIoWriter::with_capacity(24);
 
-    writer.write(false); // forbidden_zero_bit
+    writer.write(false)?; // forbidden_zero_bit
 
-    writer.write_n(&(NAL_AUD).to_be_bytes(), 6); // nal_unit_type
-    writer.write_n(&(0_u8).to_be_bytes(), 6); // nuh_layer_id
-    writer.write_n(&(1_u8).to_be_bytes(), 3); // nuh_temporal_id_plus1
+    writer.write_n(&NAL_AUD, 6)?; // nal_unit_type
+    writer.write_n(&0_u8, 6)?; // nuh_layer_id
+    writer.write_n(&1_u8, 3)?; // nuh_temporal_id_plus1
 
-    writer.write_n(&pic_type.to_be_bytes(), 3); // pic_type
+    writer.write_n(&pic_type, 3)?; // pic_type
 
     // rbsp_trailing_bits()
-    writer.write(true); // rbsp_stop_one_bit
+    writer.write(true)?; // rbsp_stop_one_bit
 
-    while !writer.is_aligned() {
-        writer.write(false); // rbsp_alignment_zero_bit
-    }
+    // rbsp_alignment_zero_bit
+    writer.byte_align()?;
 
-    data.extend_from_slice(writer.as_slice());
+    data.extend_from_slice(
+        writer
+            .as_slice()
+            .ok_or_else(|| anyhow!("Unaligned bytes"))?,
+    );
 
-    data
+    Ok(data)
 }

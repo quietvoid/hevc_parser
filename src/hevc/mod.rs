@@ -1,6 +1,6 @@
 use self::slice::SliceNAL;
 
-use super::{BitVecReader, NALUStartCode};
+use super::{BsIoVecReader, NALUStartCode};
 
 pub(crate) mod hrd_parameters;
 pub(crate) mod pps;

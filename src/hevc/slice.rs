@@ -1,6 +1,6 @@
 use anyhow::{format_err, Result};
 
-use super::BitVecReader;
+use super::BsIoVecReader;
 use super::*;
 use super::{pps::PPSNAL, sps::SPSNAL, NALUnit};
 
@@ -20,7 +20,7 @@ pub struct SliceNAL {
 
 impl SliceNAL {
     pub fn parse(
-        bs: &mut BitVecReader,
+        bs: &mut BsIoVecReader,
         sps_list: &[SPSNAL],
         pps_list: &[PPSNAL],
         nal: &NALUnit,
@@ -53,7 +53,7 @@ impl SliceNAL {
             }
 
             let pic_size = (sps.ctb_width * sps.ctb_height) as f64;
-            let slice_address_length = pic_size.log2().ceil() as usize;
+            let slice_address_length = pic_size.log2().ceil() as u32;
 
             slice.slice_segment_addr = bs.get_n(slice_address_length)?;
         } else {
@@ -79,7 +79,7 @@ impl SliceNAL {
         }
 
         if !is_idr_nal(nal) {
-            slice.pic_order_cnt_lsb = bs.get_n(sps.log2_max_poc_lsb as usize)?;
+            slice.pic_order_cnt_lsb = bs.get_n(sps.log2_max_poc_lsb as u32)?;
             slice.output_picture_number = compute_poc(sps, *poc_tid0, slice.pic_order_cnt_lsb, nal);
         } else {
             slice.output_picture_number = 0;

@@ -4,7 +4,7 @@ use super::profile_tier_level::ProfileTierLevel;
 use super::scaling_list_data::ScalingListData;
 use super::short_term_rps::ShortTermRPS;
 use super::vui_parameters::VuiParameters;
-use super::BitVecReader;
+use super::BsIoVecReader;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
@@ -86,7 +86,7 @@ pub struct SPSNAL {
 }
 
 impl SPSNAL {
-    pub fn parse(bs: &mut BitVecReader) -> Result<SPSNAL> {
+    pub fn parse(bs: &mut BsIoVecReader) -> Result<SPSNAL> {
         let mut sps = SPSNAL {
             vps_id: bs.get_n(4)?,
             ..Default::default()
@@ -187,7 +187,7 @@ impl SPSNAL {
 
             for _ in 0..sps.num_long_term_ref_pics_sps {
                 sps.lt_ref_pic_poc_lsb_sps
-                    .push(bs.get_n(sps.log2_max_poc_lsb as usize)?);
+                    .push(bs.get_n(sps.log2_max_poc_lsb as u32)?);
                 sps.used_by_curr_pic_lt_sps_flag.push(bs.get()?);
             }
         }

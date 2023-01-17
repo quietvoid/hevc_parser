@@ -1,4 +1,4 @@
-use super::BitVecReader;
+use super::BsIoVecReader;
 use anyhow::Result;
 
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
@@ -27,7 +27,7 @@ pub struct ProfileTierLevel {
 }
 
 impl ProfileTierLevel {
-    pub fn parse(&mut self, bs: &mut BitVecReader, max_sub_layers: u8) -> Result<()> {
+    pub fn parse(&mut self, bs: &mut BsIoVecReader, max_sub_layers: u8) -> Result<()> {
         self.general_profile_space = bs.get_n(2)?;
         self.general_tier_flag = bs.get()?;
         self.general_profile_idc = bs.get_n(5)?;

@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use super::hrd_parameters::HrdParameters;
-use super::BitVecReader;
+use super::BsIoVecReader;
 
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct VuiParameters {
@@ -53,7 +53,7 @@ pub struct VuiParameters {
 }
 
 impl VuiParameters {
-    pub fn parse(bs: &mut BitVecReader, max_sub_layers: u8) -> Result<VuiParameters> {
+    pub fn parse(bs: &mut BsIoVecReader, max_sub_layers: u8) -> Result<VuiParameters> {
         let mut vui = VuiParameters {
             sar_present: bs.get()?,
             ..Default::default()

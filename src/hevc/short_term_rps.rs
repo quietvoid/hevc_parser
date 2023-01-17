@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use super::sps::SPSNAL;
-use super::BitVecReader;
+use super::BsIoVecReader;
 
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct ShortTermRPS {
@@ -23,7 +23,7 @@ pub struct ShortTermRPS {
 
 impl ShortTermRPS {
     pub fn parse(
-        bs: &mut BitVecReader,
+        bs: &mut BsIoVecReader,
         sps: &SPSNAL,
         st_rps_idx: usize,
         nb_st_rps: u64,

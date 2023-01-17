@@ -1,4 +1,4 @@
-use super::{scaling_list_data::ScalingListData, BitVecReader};
+use super::{scaling_list_data::ScalingListData, BsIoVecReader};
 use anyhow::Result;
 
 #[allow(clippy::upper_case_acronyms)]
@@ -52,7 +52,7 @@ pub struct PPSNAL {
 }
 
 impl PPSNAL {
-    pub fn parse(bs: &mut BitVecReader) -> Result<PPSNAL> {
+    pub fn parse(bs: &mut BsIoVecReader) -> Result<PPSNAL> {
         let mut pps = PPSNAL {
             pps_id: bs.get_ue()?,
             sps_id: bs.get_ue()?,

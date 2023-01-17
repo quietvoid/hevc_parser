@@ -1,4 +1,4 @@
-use super::BitVecReader;
+use super::BsIoVecReader;
 use anyhow::Result;
 
 #[derive(Default)]
@@ -8,7 +8,7 @@ pub struct SubLayerHrdParameter {}
 
 impl HrdParameters {
     pub fn parse(
-        bs: &mut BitVecReader,
+        bs: &mut BsIoVecReader,
         common_inf_present: bool,
         vps_max_sub_layers: u8,
     ) -> Result<()> {
@@ -76,7 +76,7 @@ impl HrdParameters {
 }
 
 impl SubLayerHrdParameter {
-    pub fn parse(bs: &mut BitVecReader, nb_cpb: u64, subpic_params_present: bool) -> Result<()> {
+    pub fn parse(bs: &mut BsIoVecReader, nb_cpb: u64, subpic_params_present: bool) -> Result<()> {
         for _ in 0..nb_cpb {
             bs.get_ue()?; // bit_rate_value_minus1
             bs.get_ue()?; // cpb_size_value_minus1

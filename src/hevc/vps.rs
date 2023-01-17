@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use super::hrd_parameters::HrdParameters;
 use super::profile_tier_level::ProfileTierLevel;
-use super::BitVecReader;
+use super::BsIoVecReader;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Debug, PartialEq, Eq)]
@@ -27,7 +27,7 @@ pub struct VPSNAL {
 }
 
 impl VPSNAL {
-    pub fn parse(bs: &mut BitVecReader) -> Result<VPSNAL> {
+    pub fn parse(bs: &mut BsIoVecReader) -> Result<VPSNAL> {
         let mut vps = VPSNAL {
             vps_id: bs.get_n(4)?,
             ..Default::default()
