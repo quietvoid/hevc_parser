@@ -3,24 +3,24 @@ use bitvec_helpers::bitstream_io_writer::BitstreamIoWriter;
 
 use super::{Frame, NALUStartCode, NAL_AUD};
 
-const THREE_BYTE_SLICE: &[u8] = &[0, 0, 3];
-
 pub fn clear_start_code_emulation_prevention_3_byte(data: &[u8]) -> Vec<u8> {
     let len = data.len();
-    let mut unescaped_bytes: Vec<u8> = Vec::with_capacity(len);
 
-    let mut i = 0;
-    while i < len {
-        let is_emulation_prevention_3_byte = i > 2 && matches!(&data[i - 2..=i], THREE_BYTE_SLICE);
+    if len > 2 {
+        let mut unescaped_bytes: Vec<u8> = Vec::with_capacity(len);
+        unescaped_bytes.push(data[0]);
+        unescaped_bytes.push(data[1]);
 
-        if !is_emulation_prevention_3_byte {
-            unescaped_bytes.push(data[i]);
+        for i in 2..len {
+            if !(data[i - 2] == 0 && data[i - 1] == 0 && data[i] == 3) {
+                unescaped_bytes.push(data[i]);
+            }
         }
 
-        i += 1;
+        unescaped_bytes
+    } else {
+        data.to_owned()
     }
-
-    unescaped_bytes
 }
 
 /// Within the NAL unit, the following three-byte sequences shall not occur at any byte-aligned position:
