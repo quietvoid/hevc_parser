@@ -4,7 +4,9 @@ use self::slice::SliceNAL;
 
 use super::{BsIoVecReader, NALUStartCode};
 
+pub mod context;
 pub(crate) mod hrd_parameters;
+pub mod hvcc;
 pub mod pps;
 pub(crate) mod profile_tier_level;
 pub(crate) mod scaling_list_data;
