@@ -5,51 +5,51 @@ use super::BsIoVecReader;
 
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct VuiParameters {
-    sar_present: bool,
-    sar_idx: u8,
-    sar_num: u16,
-    sar_den: u16,
-    overscan_info_present_flag: bool,
-    overscan_appropriate_flag: bool,
-    video_signal_type_present_flag: bool,
+    pub sar_present: bool,
+    pub sar_idc: u8,
+    pub sar_num: u16,
+    pub sar_den: u16,
+    pub overscan_info_present_flag: bool,
+    pub overscan_appropriate_flag: bool,
+    pub video_signal_type_present_flag: bool,
 
-    video_format: u8,
-    video_full_range_flag: bool,
-    colour_description_present_flag: bool,
-    colour_primaries: u8,
-    transfer_characteristic: u8,
-    matrix_coeffs: u8,
+    pub video_format: u8,
+    pub video_full_range_flag: bool,
+    pub colour_description_present_flag: bool,
+    pub colour_primaries: u8,
+    pub transfer_characteristic: u8,
+    pub matrix_coeffs: u8,
 
-    chroma_loc_info_present_flag: bool,
-    chroma_sample_loc_type_top_field: u64,
-    chroma_sample_loc_type_bottom_field: u64,
-    neutral_chroma_indication_flag: bool,
-    field_seq_flag: bool,
-    frame_field_info_present_flag: bool,
+    pub chroma_loc_info_present_flag: bool,
+    pub chroma_sample_loc_type_top_field: u64,
+    pub chroma_sample_loc_type_bottom_field: u64,
+    pub neutral_chroma_indication_flag: bool,
+    pub field_seq_flag: bool,
+    pub frame_field_info_present_flag: bool,
 
-    default_display_window_flag: bool,
-    def_disp_win_left_offset: u64,
-    def_disp_win_right_offset: u64,
-    def_disp_win_top_offset: u64,
-    def_disp_win_bottom_offset: u64,
+    pub default_display_window_flag: bool,
+    pub def_disp_win_left_offset: u64,
+    pub def_disp_win_right_offset: u64,
+    pub def_disp_win_top_offset: u64,
+    pub def_disp_win_bottom_offset: u64,
 
-    vui_timing_info_present_flag: bool,
-    vui_num_units_in_tick: u32,
-    vui_time_scale: u32,
-    vui_poc_proportional_to_timing_flag: bool,
-    vui_num_ticks_poc_diff_one_minus1: u64,
-    vui_hrd_parameters_present_flag: bool,
+    pub vui_timing_info_present_flag: bool,
+    pub vui_num_units_in_tick: u32,
+    pub vui_time_scale: u32,
+    pub vui_poc_proportional_to_timing_flag: bool,
+    pub vui_num_ticks_poc_diff_one_minus1: u64,
+    pub vui_hrd_parameters_present_flag: bool,
 
-    bitstream_restriction_flag: bool,
-    tiles_fixed_structure_flag: bool,
-    motion_vectors_over_pic_boundaries_flag: bool,
-    restricted_ref_pic_lists_flag: bool,
+    pub bitstream_restriction_flag: bool,
+    pub tiles_fixed_structure_flag: bool,
+    pub motion_vectors_over_pic_boundaries_flag: bool,
+    pub restricted_ref_pic_lists_flag: bool,
 
-    min_spatial_segmentation_idc: u64,
-    max_bytes_per_pic_denom: u64,
-    max_bits_per_min_cu_denom: u64,
-    log2_max_mv_length_horizontal: u64,
-    log2_max_mv_length_vertical: u64,
+    pub min_spatial_segmentation_idc: u64,
+    pub max_bytes_per_pic_denom: u64,
+    pub max_bits_per_min_cu_denom: u64,
+    pub log2_max_mv_length_horizontal: u64,
+    pub log2_max_mv_length_vertical: u64,
 }
 
 impl VuiParameters {
@@ -60,9 +60,9 @@ impl VuiParameters {
         };
 
         if vui.sar_present {
-            vui.sar_idx = bs.get_n(8)?;
+            vui.sar_idc = bs.get_n(8)?;
 
-            if vui.sar_idx == 255 {
+            if vui.sar_idc == 255 {
                 vui.sar_num = bs.get_n(16)?;
                 vui.sar_den = bs.get_n(16)?;
             }
@@ -134,5 +134,32 @@ impl VuiParameters {
         }
 
         Ok(vui)
+    }
+
+    pub fn aspect_ratio(&self) -> Option<(u16, u16)> {
+        if !self.sar_present {
+            return None;
+        }
+
+        match self.sar_idc {
+            1 => Some((1, 1)),
+            2 => Some((12, 11)),
+            3 => Some((10, 11)),
+            4 => Some((16, 11)),
+            5 => Some((40, 33)),
+            6 => Some((24, 11)),
+            7 => Some((20, 11)),
+            8 => Some((32, 11)),
+            9 => Some((80, 33)),
+            10 => Some((18, 11)),
+            11 => Some((15, 11)),
+            12 => Some((64, 33)),
+            13 => Some((160, 99)),
+            14 => Some((4, 3)),
+            15 => Some((3, 2)),
+            16 => Some((2, 1)),
+            255 => Some((self.sar_num, self.sar_den)),
+            _ => None,
+        }
     }
 }
