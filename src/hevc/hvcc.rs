@@ -101,6 +101,15 @@ impl<'buf> HevcDecoderConfigurationRecord<'buf> {
 
         ParamSetIter::new(data, unit_type).take(0)
     }
+    pub fn video_parameter_sets(&self) -> impl Iterator<Item = Result<&'buf[u8], ParamSetError>> {
+        self.parameter_sets(UnitType::NalVps)
+    }
+    pub fn sequence_parameter_sets(&self) -> impl Iterator<Item = Result<&'buf[u8], ParamSetError>> {
+        self.parameter_sets(UnitType::NalSps)
+    }
+    pub fn picture_parameter_sets(&self) -> impl Iterator<Item = Result<&'buf[u8], ParamSetError>> {
+        self.parameter_sets(UnitType::NalPps)
+    }
 
     /// Creates an H265 parser context, using the settings encoded into
     /// this `HevcDecoderConfigurationRecord`.
