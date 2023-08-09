@@ -6,6 +6,9 @@ use super::short_term_rps::ShortTermRPS;
 use super::vui_parameters::VuiParameters;
 use super::BsIoVecReader;
 
+const SUB_WIDTH_C: &[u64; 4] = &[1, 2, 2, 1];
+const SUB_HEIGHT_C: &[u64; 4] = &[1, 2, 1, 1];
+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct SPSNAL {
@@ -220,5 +223,23 @@ impl SPSNAL {
         sps.tb_mask = (1 << (sps.log2_ctb_size - sps.log2_min_tb_size)) - 1;
 
         Ok(sps)
+    }
+
+    pub fn width(&self) -> u64 {
+        if self.pic_conformance_flag {
+            let crop_unit_x = SUB_WIDTH_C[self.chroma_format_idc as usize];
+            return self.width - ((self.conf_win_left_offset + self.conf_win_right_offset) * crop_unit_x)
+        }
+
+        self.width
+    }
+
+    pub fn height(&self) -> u64 {
+        if self.pic_conformance_flag {
+            let crop_unit_y = SUB_HEIGHT_C[self.chroma_format_idc as usize];
+            return self.height - ((self.conf_win_top_offset + self.conf_win_bottom_offset) * crop_unit_y)
+        }
+
+        self.height
     }
 }
