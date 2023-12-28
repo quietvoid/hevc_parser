@@ -25,8 +25,9 @@ const HEADER_LEN_4: usize = 4;
 const NAL_START_CODE_3: &[u8] = &[0, 0, 1];
 const NAL_START_CODE_4: &[u8] = &[0, 0, 0, 1];
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub enum NALUStartCode {
+    #[default]
     Length3,
     Length4,
 }
@@ -400,12 +401,6 @@ impl HevcParser {
 
     pub fn get_nals(&self) -> &Vec<NALUnit> {
         &self.nals
-    }
-}
-
-impl Default for NALUStartCode {
-    fn default() -> Self {
-        NALUStartCode::Length3
     }
 }
 
