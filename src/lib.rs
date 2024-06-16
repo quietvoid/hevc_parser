@@ -9,13 +9,14 @@ pub mod utils;
 #[cfg(feature = "hevc_io")]
 pub mod io;
 
-use hevc::*;
+pub use hevc::*;
 use pps::PPSNAL;
 use slice::SliceNAL;
 use sps::SPSNAL;
 use vps::VPSNAL;
 
-use utils::clear_start_code_emulation_prevention_3_byte;
+pub use utils::clear_start_code_emulation_prevention_3_byte;
+pub use utils::add_start_code_emulation_prevention_3_byte;
 
 // We don't want to parse large slices because the memory is copied
 const MAX_PARSE_SIZE: usize = 2048;
