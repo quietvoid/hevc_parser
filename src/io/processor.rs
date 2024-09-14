@@ -31,6 +31,10 @@ pub struct HevcProcessorOpts {
     /// Parse the NALs, required for `buffer_frame`
     /// Provides frame presentation order
     pub parse_nals: bool,
+
+    /// Stop reading the stream after N frames
+    /// The number of processed frames may differ.
+    pub limit: Option<u64>,
 }
 
 impl HevcProcessor {
@@ -79,6 +83,7 @@ impl HevcProcessor {
     /// Depending on the options, this either:
     ///   - Loops the entire stream until EOF
     ///   - Loops until a complete frame has been parsed
+    ///
     /// In both cases, the processor callback is called when a NALU payload is ready.
     pub fn parse_nalus(
         &mut self,
@@ -155,14 +160,18 @@ impl HevcProcessor {
                 self.consumed = 0;
             }
 
-            if self.opts.buffer_frame {
-                let next_frame = nals.iter().map(|nal| nal.decoded_frame_index).max();
+            let check_current_frame_idx = self.opts.buffer_frame || self.opts.limit.is_some();
+            if check_current_frame_idx {
+                let max_frame_idx = nals.iter().map(|nal| nal.decoded_frame_index).max();
 
-                if let Some(number) = next_frame {
-                    if number > self.last_buffered_frame {
-                        self.last_buffered_frame = number;
+                if let Some(frame_idx) = max_frame_idx {
+                    if self.opts.limit.is_some_and(|limit| frame_idx > limit) {
+                        // Must be higher than limit, to make sure that the AU was fully read
+                        break;
+                    }
 
-                        // Stop reading
+                    if self.opts.buffer_frame && frame_idx > self.last_buffered_frame {
+                        self.last_buffered_frame = frame_idx;
                         break;
                     }
                 }
@@ -178,6 +187,7 @@ impl Default for HevcProcessorOpts {
         Self {
             buffer_frame: false,
             parse_nals: true,
+            limit: Default::default(),
         }
     }
 }
