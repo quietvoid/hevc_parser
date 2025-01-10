@@ -6,83 +6,86 @@ use super::short_term_rps::ShortTermRPS;
 use super::vui_parameters::VuiParameters;
 use super::BsIoVecReader;
 
+const SUB_WIDTH_C: &[u64; 4] = &[1, 2, 2, 1];
+const SUB_HEIGHT_C: &[u64; 4] = &[1, 2, 1, 1];
+
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct SPSNAL {
-    pub(crate) vps_id: u8,
-    max_sub_layers: u8,
-    temporal_id_nesting_flag: bool,
+    pub vps_id: u8,
+    pub max_sub_layers: u8,
+    pub temporal_id_nesting_flag: bool,
 
-    ptl: ProfileTierLevel,
-    pub(crate) sps_id: u64,
-    chroma_format_idc: u64,
-    pub(crate) separate_colour_plane_flag: bool,
-    width: u64,
-    height: u64,
+    pub ptl: ProfileTierLevel,
+    pub sps_id: u64,
+    pub chroma_format_idc: u64,
+    pub separate_colour_plane_flag: bool,
+    pub width: u64,
+    pub height: u64,
 
-    pic_conformance_flag: bool,
-    conf_win_left_offset: u64,
-    conf_win_right_offset: u64,
-    conf_win_top_offset: u64,
-    conf_win_bottom_offset: u64,
+    pub pic_conformance_flag: bool,
+    pub conf_win_left_offset: u64,
+    pub conf_win_right_offset: u64,
+    pub conf_win_top_offset: u64,
+    pub conf_win_bottom_offset: u64,
 
-    bit_depth: u64,
-    bit_depth_chroma: u64,
-    pub(crate) log2_max_poc_lsb: u64,
-    sublayer_ordering_info: bool,
-    max_dec_pic_buffering: Vec<u64>,
-    num_reorder_pics: Vec<u64>,
-    max_latency_increase: Vec<u64>,
+    pub bit_depth: u64,
+    pub bit_depth_chroma: u64,
+    pub log2_max_poc_lsb: u64,
+    pub sublayer_ordering_info: bool,
+    pub max_dec_pic_buffering: Vec<u64>,
+    pub num_reorder_pics: Vec<u64>,
+    pub max_latency_increase: Vec<u64>,
 
-    log2_min_cb_size: u64,
-    log2_diff_max_min_coding_block_size: u64,
-    log2_min_tb_size: u64,
-    log2_diff_max_min_transform_block_size: u64,
-    max_transform_hierarchy_depth_inter: u64,
-    max_transform_hierarchy_depth_intra: u64,
+    pub log2_min_cb_size: u64,
+    pub log2_diff_max_min_coding_block_size: u64,
+    pub log2_min_tb_size: u64,
+    pub log2_diff_max_min_transform_block_size: u64,
+    pub max_transform_hierarchy_depth_inter: u64,
+    pub max_transform_hierarchy_depth_intra: u64,
 
-    scaling_list_enabled_flag: bool,
-    scaling_list_data_present_flag: bool,
-    scaling_list_data: ScalingListData,
+    pub scaling_list_enabled_flag: bool,
+    pub scaling_list_data_present_flag: bool,
+    pub scaling_list_data: ScalingListData,
 
-    amp_enabled_flag: bool,
-    sao_enabled_flag: bool,
-    pcm_enabled_flag: bool,
-    pcm_bit_depth: u8,
-    pcm_bit_depth_chroma: u8,
-    pcm_log2_min_pcm_cb_size: u64,
-    pcm_log2_max_pcm_cb_size: u64,
-    pcm_loop_filter_disable_flag: bool,
+    pub amp_enabled_flag: bool,
+    pub sao_enabled_flag: bool,
+    pub pcm_enabled_flag: bool,
+    pub pcm_bit_depth: u8,
+    pub pcm_bit_depth_chroma: u8,
+    pub pcm_log2_min_pcm_cb_size: u64,
+    pub pcm_log2_max_pcm_cb_size: u64,
+    pub pcm_loop_filter_disable_flag: bool,
 
-    nb_st_rps: u64,
-    pub(crate) short_term_ref_pic_sets: Vec<ShortTermRPS>,
+    pub nb_st_rps: u64,
+    pub short_term_ref_pic_sets: Vec<ShortTermRPS>,
 
-    long_term_ref_pics_present_flag: bool,
-    num_long_term_ref_pics_sps: u64,
-    lt_ref_pic_poc_lsb_sps: Vec<u64>,
-    used_by_curr_pic_lt_sps_flag: Vec<bool>,
+    pub long_term_ref_pics_present_flag: bool,
+    pub num_long_term_ref_pics_sps: u64,
+    pub lt_ref_pic_poc_lsb_sps: Vec<u64>,
+    pub used_by_curr_pic_lt_sps_flag: Vec<bool>,
 
-    sps_temporal_mvp_enabled_flag: bool,
-    sps_strong_intra_smoothing_enable_flag: bool,
+    pub sps_temporal_mvp_enabled_flag: bool,
+    pub sps_strong_intra_smoothing_enable_flag: bool,
 
-    vui_present: bool,
-    vui_parameters: VuiParameters,
+    pub vui_present: bool,
+    pub vui_parameters: VuiParameters,
 
-    sps_extension_flag: bool,
+    pub sps_extension_flag: bool,
 
     // Computed values
-    pub(crate) log2_ctb_size: u64,
-    pub(crate) log2_min_pu_size: u64,
-    pub(crate) ctb_width: u64,
-    pub(crate) ctb_height: u64,
-    pub(crate) ctb_size: u64,
-    pub(crate) min_cb_width: u64,
-    pub(crate) min_cb_height: u64,
-    pub(crate) min_tb_width: u64,
-    pub(crate) min_tb_height: u64,
-    pub(crate) min_pu_width: u64,
-    pub(crate) min_pu_height: u64,
-    pub(crate) tb_mask: u64,
+    pub log2_ctb_size: u64,
+    pub log2_min_pu_size: u64,
+    pub ctb_width: u64,
+    pub ctb_height: u64,
+    pub ctb_size: u64,
+    pub min_cb_width: u64,
+    pub min_cb_height: u64,
+    pub min_tb_width: u64,
+    pub min_tb_height: u64,
+    pub min_pu_width: u64,
+    pub min_pu_height: u64,
+    pub tb_mask: u64,
 }
 
 impl SPSNAL {
@@ -220,5 +223,23 @@ impl SPSNAL {
         sps.tb_mask = (1 << (sps.log2_ctb_size - sps.log2_min_tb_size)) - 1;
 
         Ok(sps)
+    }
+
+    pub fn width(&self) -> u64 {
+        if self.pic_conformance_flag {
+            let crop_unit_x = SUB_WIDTH_C[self.chroma_format_idc as usize];
+            return self.width - ((self.conf_win_left_offset + self.conf_win_right_offset) * crop_unit_x)
+        }
+
+        self.width
+    }
+
+    pub fn height(&self) -> u64 {
+        if self.pic_conformance_flag {
+            let crop_unit_y = SUB_HEIGHT_C[self.chroma_format_idc as usize];
+            return self.height - ((self.conf_win_top_offset + self.conf_win_bottom_offset) * crop_unit_y)
+        }
+
+        self.height
     }
 }
