@@ -1,5 +1,14 @@
-use anyhow::Result;
-use std::io::Read;
+use std::{
+    fs::File,
+    io::{BufRead, BufReader, Read},
+    path::Path,
+};
+
+use anyhow::{bail, ensure, Result};
+use bitvec_helpers::bitstream_io_reader::BsIoSliceReader;
+use matroska_demuxer::{MatroskaFile, TrackType};
+
+use crate::{config::HEVCDecoderConfigurationRecord, hevc::NALUnit, NALUStartCode, MAX_PARSE_SIZE};
 
 use super::{HevcParser, IoFormat, IoProcessor};
 
@@ -77,6 +86,34 @@ impl HevcProcessor {
         processor.finalize(&self.parser)?;
 
         Ok(())
+    }
+
+    /// Fully parse a file or input stream.  
+    /// If `file_path` is `None`, the format must be `RawStdin`.
+    pub fn process_file<P: AsRef<Path>>(
+        &mut self,
+        processor: &mut dyn IoProcessor,
+        file_path: Option<P>,
+    ) -> Result<()> {
+        if let Some(input) = file_path {
+            let file = File::open(input)?;
+
+            match self.format {
+                IoFormat::Matroska => self.process_matroska_file(processor, file),
+                IoFormat::Raw => {
+                    let mut reader = Box::new(BufReader::with_capacity(100_000, file));
+                    self.process_io(&mut reader, processor)
+                }
+                _ => unreachable!(),
+            }
+        } else if let IoFormat::RawStdin = self.format {
+            let stdin = std::io::stdin();
+            let mut reader = Box::new(stdin.lock()) as Box<dyn BufRead>;
+
+            self.process_io(&mut reader, processor)
+        } else {
+            bail!("Invalid params");
+        }
     }
 
     /// Parse NALUs from the stream
@@ -177,6 +214,92 @@ impl HevcProcessor {
                 }
             }
         }
+
+        Ok(())
+    }
+
+    fn process_matroska_file(&mut self, processor: &mut dyn IoProcessor, file: File) -> Result<()> {
+        let mut mkv = MatroskaFile::open(file)?;
+        let track = mkv
+            .tracks()
+            .iter()
+            .find(|t| t.track_type() == TrackType::Video && t.codec_id() == "V_MPEGH/ISO/HEVC");
+
+        ensure!(track.is_some(), "No HEVC video track found in file");
+
+        let track = track.unwrap();
+        let track_id = track.track_number().get();
+
+        let config = if let Some(codec_private) = track.codec_private() {
+            let mut bs = BsIoSliceReader::from_slice(codec_private);
+            HEVCDecoderConfigurationRecord::parse(&mut bs)?
+        } else {
+            bail!("Missing HEVC codec private data");
+        };
+
+        let nalu_size_length = (config.length_size_minus_one as usize) + 1;
+        let mut frame = matroska_demuxer::Frame::default();
+
+        while let Ok(res) = mkv.next_frame(&mut frame) {
+            if !res {
+                break;
+            } else if frame.track != track_id {
+                continue;
+            }
+
+            let data = frame.data.as_slice();
+            let mut pos = 0;
+            let end = data.len() - 1;
+
+            // Not exactly going to be accurate since only frame data is considered
+            self.consumed += data.len();
+
+            while (pos + nalu_size_length) <= end {
+                let nalu_size =
+                    u32::from_be_bytes(data[pos..pos + nalu_size_length].try_into()?) as usize;
+
+                if nalu_size == 0 {
+                    continue;
+                } else if (pos + nalu_size) > end {
+                    break;
+                }
+
+                pos += nalu_size_length;
+
+                let end = pos + nalu_size;
+                let parsing_end = if nalu_size > MAX_PARSE_SIZE {
+                    pos + MAX_PARSE_SIZE
+                } else {
+                    end
+                };
+
+                let buf = &data[pos..parsing_end];
+
+                let nal = NALUnit {
+                    start: pos,
+                    end,
+                    decoded_frame_index: self.parser.decoded_index,
+                    start_code: NALUStartCode::Length4,
+                    ..Default::default()
+                };
+
+                self.parser
+                    .handle_nal_without_start_code(buf, nal, self.opts.parse_nals)?;
+
+                pos += nalu_size;
+            }
+
+            processor.process_nals(&self.parser, &self.parser.current_frame.nals, data)?;
+
+            if self.consumed >= 100_000_000 {
+                processor.update_progress(1);
+                self.consumed = 0;
+            }
+        }
+
+        self.parser.finish();
+
+        processor.finalize(&self.parser)?;
 
         Ok(())
     }

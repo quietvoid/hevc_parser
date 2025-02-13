@@ -14,5 +14,8 @@ bitvec_helpers = { version = "3.1.6", default-features = false, features = ["bit
 anyhow = "1.0.95"
 regex = { version = "1.11.1", optional = true }
 
+# Matroska support
+matroska-demuxer = { version = "0.6.0", optional = true }
+
 [features]
-hevc_io = ["regex"]
+hevc_io = ["dep:regex", "dep:matroska-demuxer"]

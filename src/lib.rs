@@ -163,61 +163,8 @@ impl HevcParser {
             nal.start_code_len = nal.start_code.size() as u8;
         }
 
-        if parse_nal {
-            let bytes = clear_start_code_emulation_prevention_3_byte(&data[pos..parsing_end]);
-            self.reader.replace_vec(bytes);
-
-            self.parse_nal_header(&mut nal)?;
-        } else {
-            nal.nal_type = data[pos] >> 1;
-        }
-
-        if nal.nuh_layer_id > 0 {
-            return Ok(nal);
-        }
-
-        if parse_nal {
-            match nal.nal_type {
-                NAL_VPS => self.parse_vps()?,
-                NAL_SPS => self.parse_sps()?,
-                NAL_PPS => self.parse_pps()?,
-
-                NAL_TRAIL_R | NAL_TRAIL_N | NAL_TSA_N | NAL_TSA_R | NAL_STSA_N | NAL_STSA_R
-                | NAL_BLA_W_LP | NAL_BLA_W_RADL | NAL_BLA_N_LP | NAL_IDR_W_RADL | NAL_IDR_N_LP
-                | NAL_CRA_NUT | NAL_RADL_N | NAL_RADL_R | NAL_RASL_N | NAL_RASL_R => {
-                    self.parse_slice(&mut nal)?;
-
-                    self.current_frame.nals.push(nal.clone());
-                }
-                NAL_SEI_SUFFIX | NAL_UNSPEC62 | NAL_UNSPEC63 | NAL_EOS_NUT | NAL_EOB_NUT
-                | NAL_FD_NUT => {
-                    // Dolby NALs are suffixed to the slices
-                    // And EOS, EOB, FD should be contained within the current AU
-                    self.current_frame.nals.push(nal.clone());
-                }
-                _ => {
-                    self.add_current_frame();
-
-                    nal.decoded_frame_index = self.decoded_index;
-                    self.current_frame.nals.push(nal.clone());
-                }
-            };
-
-            // Parameter sets also mean a new frame
-            match nal.nal_type {
-                NAL_VPS | NAL_SPS | NAL_PPS => {
-                    self.add_current_frame();
-
-                    nal.decoded_frame_index = self.decoded_index;
-                    self.current_frame.nals.push(nal.clone());
-                }
-                _ => (),
-            };
-
-            self.nals.push(nal.clone());
-        }
-
-        Ok(nal)
+        let buf = &data[pos..parsing_end];
+        self.handle_nal_without_start_code(buf, nal, parse_nal)
     }
 
     fn parse_nal_header(&mut self, nal: &mut NALUnit) -> Result<()> {
@@ -231,6 +178,74 @@ impl HevcParser {
             nal.nuh_layer_id = self.reader.get_n(6)?;
             nal.temporal_id = self.reader.get_n::<u8>(3)? - 1;
         }
+
+        Ok(())
+    }
+
+    fn handle_nal_without_start_code(
+        &mut self,
+        data: &[u8],
+        mut nal: NALUnit,
+        parse_nal: bool,
+    ) -> Result<NALUnit> {
+        if parse_nal {
+            let bytes = clear_start_code_emulation_prevention_3_byte(data);
+            self.reader.replace_vec(bytes);
+
+            self.parse_nal_header(&mut nal)?;
+        } else {
+            nal.nal_type = data[0] >> 1;
+        }
+
+        if nal.nuh_layer_id > 0 {
+            return Ok(nal);
+        }
+
+        if parse_nal {
+            self.parse_nal_internal(&mut nal)?;
+            self.nals.push(nal.clone());
+        }
+
+        Ok(nal)
+    }
+
+    fn parse_nal_internal(&mut self, nal: &mut NALUnit) -> Result<()> {
+        match nal.nal_type {
+            NAL_VPS => self.parse_vps()?,
+            NAL_SPS => self.parse_sps()?,
+            NAL_PPS => self.parse_pps()?,
+
+            NAL_TRAIL_R | NAL_TRAIL_N | NAL_TSA_N | NAL_TSA_R | NAL_STSA_N | NAL_STSA_R
+            | NAL_BLA_W_LP | NAL_BLA_W_RADL | NAL_BLA_N_LP | NAL_IDR_W_RADL | NAL_IDR_N_LP
+            | NAL_CRA_NUT | NAL_RADL_N | NAL_RADL_R | NAL_RASL_N | NAL_RASL_R => {
+                self.parse_slice(nal)?;
+
+                self.current_frame.nals.push(nal.clone());
+            }
+            NAL_SEI_SUFFIX | NAL_UNSPEC62 | NAL_UNSPEC63 | NAL_EOS_NUT | NAL_EOB_NUT
+            | NAL_FD_NUT => {
+                // Dolby NALs are suffixed to the slices
+                // And EOS, EOB, FD should be contained within the current AU
+                self.current_frame.nals.push(nal.clone());
+            }
+            _ => {
+                self.add_current_frame();
+
+                nal.decoded_frame_index = self.decoded_index;
+                self.current_frame.nals.push(nal.clone());
+            }
+        };
+
+        // Parameter sets also mean a new frame
+        match nal.nal_type {
+            NAL_VPS | NAL_SPS | NAL_PPS => {
+                self.add_current_frame();
+
+                nal.decoded_frame_index = self.decoded_index;
+                self.current_frame.nals.push(nal.clone());
+            }
+            _ => (),
+        };
 
         Ok(())
     }

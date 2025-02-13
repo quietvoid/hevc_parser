@@ -2,6 +2,7 @@ use self::slice::SliceNAL;
 
 use super::{BsIoVecReader, NALUStartCode};
 
+pub mod config;
 pub(crate) mod hrd_parameters;
 pub(crate) mod pps;
 pub(crate) mod profile_tier_level;
