@@ -240,12 +240,21 @@ impl HevcProcessor {
         let nalu_size_length = (config.length_size_minus_one as usize) + 1;
         let mut frame = matroska_demuxer::Frame::default();
 
+        let mut frame_idx = 0;
+
         while let Ok(res) = mkv.next_frame(&mut frame) {
             if !res {
                 break;
             } else if frame.track != track_id {
                 continue;
             }
+
+            if self.opts.limit.is_some_and(|limit| frame_idx >= limit) {
+                // last frame was already processed so we can break
+                break;
+            }
+
+            frame_idx += 1;
 
             let data = frame.data.as_slice();
             let mut pos = 0;
