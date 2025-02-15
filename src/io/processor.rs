@@ -242,6 +242,8 @@ impl HevcProcessor {
 
         let mut frame_idx = 0;
 
+        let mut frame_nals = Vec::with_capacity(16);
+
         while let Ok(res) = mkv.next_frame(&mut frame) {
             if !res {
                 break;
@@ -292,13 +294,16 @@ impl HevcProcessor {
                     ..Default::default()
                 };
 
-                self.parser
-                    .handle_nal_without_start_code(buf, nal, self.opts.parse_nals)?;
+                let nal =
+                    self.parser
+                        .handle_nal_without_start_code(buf, nal, self.opts.parse_nals)?;
+                frame_nals.push(nal);
 
                 pos += nalu_size;
             }
 
-            processor.process_nals(&self.parser, &self.parser.current_frame.nals, data)?;
+            processor.process_nals(&self.parser, &frame_nals, data)?;
+            frame_nals.clear();
 
             if self.consumed >= 100_000_000 {
                 processor.update_progress(1);
