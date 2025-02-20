@@ -55,7 +55,7 @@ impl HEVCDecoderConfigurationRecord {
 
         config.avg_frame_rate = bs.get_n(16)?;
         config.constant_frame_rate = bs.get_n(2)?;
-        config.num_temporal_layers = bs.get_n(2)?;
+        config.num_temporal_layers = bs.get_n(3)?;
         config.temporal_id_nested = bs.get()?;
         config.length_size_minus_one = bs.get_n(2)?;
 
