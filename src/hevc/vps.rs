@@ -1,8 +1,8 @@
 use anyhow::Result;
 
+use super::BsIoVecReader;
 use super::hrd_parameters::HrdParameters;
 use super::profile_tier_level::ProfileTierLevel;
-use super::BsIoVecReader;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Debug, PartialEq, Eq)]

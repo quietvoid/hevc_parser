@@ -1,5 +1,5 @@
 use anyhow::Result;
-use nom::{bytes::complete::take_until, IResult};
+use nom::{IResult, bytes::complete::take_until};
 
 use bitvec_helpers::bitstream_io_reader::BsIoVecReader;
 

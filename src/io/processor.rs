@@ -4,11 +4,11 @@ use std::{
     path::Path,
 };
 
-use anyhow::{bail, ensure, Result};
+use anyhow::{Result, bail, ensure};
 use bitvec_helpers::bitstream_io_reader::BsIoSliceReader;
 use matroska_demuxer::{MatroskaFile, TrackType};
 
-use crate::{config::HEVCDecoderConfigurationRecord, hevc::NALUnit, NALUStartCode, MAX_PARSE_SIZE};
+use crate::{MAX_PARSE_SIZE, NALUStartCode, config::HEVCDecoderConfigurationRecord, hevc::NALUnit};
 
 use super::{HevcParser, IoFormat, IoProcessor};
 

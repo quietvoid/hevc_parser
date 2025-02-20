@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use super::sps::SPSNAL;
 use super::BsIoVecReader;
+use super::sps::SPSNAL;
 
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct ShortTermRPS {

@@ -1,7 +1,7 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use bitvec_helpers::bitstream_io_writer::BitstreamIoWriter;
 
-use super::{Frame, NALUStartCode, NAL_AUD};
+use super::{Frame, NAL_AUD, NALUStartCode};
 
 pub fn clear_start_code_emulation_prevention_3_byte(data: &[u8]) -> Vec<u8> {
     let len = data.len();

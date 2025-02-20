@@ -1,5 +1,5 @@
 use super::{NAL_EOB_NUT, NAL_EOS_NUT, NAL_SEI_PREFIX, NAL_SEI_SUFFIX};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use bitvec_helpers::bitstream_io_reader::BsIoSliceReader;
 
 #[derive(Default, Debug, Clone)]

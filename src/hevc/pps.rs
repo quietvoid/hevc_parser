@@ -1,4 +1,4 @@
-use super::{scaling_list_data::ScalingListData, BsIoVecReader};
+use super::{BsIoVecReader, scaling_list_data::ScalingListData};
 use anyhow::Result;
 
 #[allow(clippy::upper_case_acronyms)]

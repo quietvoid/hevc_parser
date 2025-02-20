@@ -1,10 +1,10 @@
 use anyhow::Result;
 
+use super::BsIoVecReader;
 use super::profile_tier_level::ProfileTierLevel;
 use super::scaling_list_data::ScalingListData;
 use super::short_term_rps::ShortTermRPS;
 use super::vui_parameters::VuiParameters;
-use super::BsIoVecReader;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Default, Debug, PartialEq, Clone, Eq)]

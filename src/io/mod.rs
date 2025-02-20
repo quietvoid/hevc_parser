@@ -3,12 +3,12 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{bail, format_err, Result};
+use anyhow::{Result, bail, format_err};
 use regex::Regex;
 
 pub mod processor;
 
-use super::{hevc::*, HevcParser, NALUStartCode, NALUnit};
+use super::{HevcParser, NALUStartCode, NALUnit, hevc::*};
 
 pub const FOUR_SIZED_NALU_TYPES: &[u8] = &[NAL_VPS, NAL_SPS, NAL_PPS, NAL_AUD, NAL_UNSPEC62];
 

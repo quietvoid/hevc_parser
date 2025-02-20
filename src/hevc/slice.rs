@@ -1,8 +1,8 @@
-use anyhow::{format_err, Result};
+use anyhow::{Result, format_err};
 
 use super::BsIoVecReader;
 use super::*;
-use super::{pps::PPSNAL, sps::SPSNAL, NALUnit};
+use super::{NALUnit, pps::PPSNAL, sps::SPSNAL};
 
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct SliceNAL {

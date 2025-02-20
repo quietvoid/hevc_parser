@@ -1,7 +1,7 @@
 use anyhow::Result;
 
-use super::hrd_parameters::HrdParameters;
 use super::BsIoVecReader;
+use super::hrd_parameters::HrdParameters;
 
 #[derive(Default, Debug, PartialEq, Clone, Eq)]
 pub struct VuiParameters {
