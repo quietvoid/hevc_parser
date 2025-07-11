@@ -17,11 +17,11 @@ impl HrdParameters {
         let mut subpic_params_present = false;
 
         if common_inf_present {
-            nal_params_present = bs.get()?;
-            vcl_params_present = bs.get()?;
+            nal_params_present = bs.read_bit()?;
+            vcl_params_present = bs.read_bit()?;
 
             if nal_params_present || vcl_params_present {
-                subpic_params_present = bs.get()?;
+                subpic_params_present = bs.read_bit()?;
 
                 if subpic_params_present {
                     bs.skip_n(8)?; // tick_divisor_minus2
@@ -46,20 +46,20 @@ impl HrdParameters {
         for _ in 0..vps_max_sub_layers {
             let mut low_delay = false;
             let mut nb_cpb = 1;
-            let mut fixed_rate = bs.get()?;
+            let mut fixed_rate = bs.read_bit()?;
 
             if !fixed_rate {
-                fixed_rate = bs.get()?;
+                fixed_rate = bs.read_bit()?;
             }
 
             if fixed_rate {
-                bs.get_ue()?;
+                bs.read_ue()?;
             } else {
-                low_delay = bs.get()?;
+                low_delay = bs.read_bit()?;
             }
 
             if !low_delay {
-                nb_cpb = bs.get_ue()? + 1;
+                nb_cpb = bs.read_ue()? + 1;
             }
 
             if nal_params_present {
@@ -78,12 +78,12 @@ impl HrdParameters {
 impl SubLayerHrdParameter {
     pub fn parse(bs: &mut BsIoVecReader, nb_cpb: u64, subpic_params_present: bool) -> Result<()> {
         for _ in 0..nb_cpb {
-            bs.get_ue()?; // bit_rate_value_minus1
-            bs.get_ue()?; // cpb_size_value_minus1
+            bs.read_ue()?; // bit_rate_value_minus1
+            bs.read_ue()?; // cpb_size_value_minus1
 
             if subpic_params_present {
-                bs.get_ue()?; // cpb_size_du_value_minus1
-                bs.get_ue()?; // bit_rate_du_value_minus1
+                bs.read_ue()?; // cpb_size_du_value_minus1
+                bs.read_ue()?; // bit_rate_du_value_minus1
             }
 
             bs.skip_n(1)?; // cbr_flag

@@ -28,36 +28,36 @@ pub struct HEVCDecoderConfigurationRecord {
 impl HEVCDecoderConfigurationRecord {
     pub fn parse(bs: &mut BsIoSliceReader) -> Result<Self> {
         let mut config = HEVCDecoderConfigurationRecord {
-            configuration_version: bs.get_n(8)?,
-            general_profile_space: bs.get_n(2)?,
-            general_tier_flag: bs.get()?,
-            general_profile_idc: bs.get_n(5)?,
-            general_profile_compatibility_flags: bs.get_n(32)?,
-            general_constraint_indicator_flags: bs.get_n(48)?,
-            general_level_idc: bs.get_n(8)?,
+            configuration_version: bs.read::<8, u8>()?,
+            general_profile_space: bs.read::<2, u8>()?,
+            general_tier_flag: bs.read_bit()?,
+            general_profile_idc: bs.read::<5, u8>()?,
+            general_profile_compatibility_flags: bs.read::<32, u32>()?,
+            general_constraint_indicator_flags: bs.read::<48, u64>()?,
+            general_level_idc: bs.read::<8, u8>()?,
             ..Default::default()
         };
 
         bs.skip_n(4)?; // reserved 4bits
-        config.min_spatial_segmentation_idc = bs.get_n(12)?;
+        config.min_spatial_segmentation_idc = bs.read::<12, u16>()?;
 
         bs.skip_n(6)?; // reserved 6 bits
-        config.parallelism_type = bs.get_n(2)?;
+        config.parallelism_type = bs.read::<2, u8>()?;
 
         bs.skip_n(6)?; // reserved 6 bits
-        config.chroma_format_idc = bs.get_n(2)?;
+        config.chroma_format_idc = bs.read::<2, u8>()?;
 
         bs.skip_n(5)?; // reserved 5 bits
-        config.bit_depth_luma_minus8 = bs.get_n(3)?;
+        config.bit_depth_luma_minus8 = bs.read::<3, u8>()?;
 
         bs.skip_n(5)?; // reserved 5 bits
-        config.bit_depth_chroma_minus8 = bs.get_n(3)?;
+        config.bit_depth_chroma_minus8 = bs.read::<3, u8>()?;
 
-        config.avg_frame_rate = bs.get_n(16)?;
-        config.constant_frame_rate = bs.get_n(2)?;
-        config.num_temporal_layers = bs.get_n(3)?;
-        config.temporal_id_nested = bs.get()?;
-        config.length_size_minus_one = bs.get_n(2)?;
+        config.avg_frame_rate = bs.read::<16, u16>()?;
+        config.constant_frame_rate = bs.read::<2, u8>()?;
+        config.num_temporal_layers = bs.read::<3, u8>()?;
+        config.temporal_id_nested = bs.read_bit()?;
+        config.length_size_minus_one = bs.read::<2, u8>()?;
 
         Ok(config)
     }

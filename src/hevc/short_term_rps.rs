@@ -32,18 +32,18 @@ impl ShortTermRPS {
         let mut rps = ShortTermRPS::default();
 
         if st_rps_idx > 0 && nb_st_rps > 0 {
-            rps.inter_ref_pic_set_prediction_flag = bs.get()?;
+            rps.inter_ref_pic_set_prediction_flag = bs.read_bit()?;
         }
 
         if rps.inter_ref_pic_set_prediction_flag {
             let ref_pic_sets = &sps.short_term_ref_pic_sets;
 
             if st_rps_idx == nb_st_rps as usize || is_slice_header {
-                rps.delta_idx = bs.get_ue()?;
+                rps.delta_idx = bs.read_ue()?;
             }
 
-            rps.delta_rps_sign = bs.get()?;
-            rps.abs_delta_rps = bs.get_ue()? + 1;
+            rps.delta_rps_sign = bs.read_bit()?;
+            rps.abs_delta_rps = bs.read_ue()? + 1;
 
             let ref_rps_idx = st_rps_idx - (rps.delta_idx as usize + 1);
             let mut num_delta_pocs: usize = 0;
@@ -63,24 +63,24 @@ impl ShortTermRPS {
             rps.use_delta_flags.resize(num_delta_pocs + 1, true);
 
             for i in 0..=num_delta_pocs {
-                rps.used_by_curr_pic_flags[i] = bs.get()?;
+                rps.used_by_curr_pic_flags[i] = bs.read_bit()?;
 
                 if !rps.used_by_curr_pic_flags[i] {
-                    rps.use_delta_flags[i] = bs.get()?;
+                    rps.use_delta_flags[i] = bs.read_bit()?;
                 }
             }
         } else {
-            rps.num_negative_pics = bs.get_ue()?;
-            rps.num_positive_pics = bs.get_ue()?;
+            rps.num_negative_pics = bs.read_ue()?;
+            rps.num_positive_pics = bs.read_ue()?;
 
             for _ in 0..rps.num_negative_pics {
-                rps.delta_poc_s0.push(bs.get_ue()? + 1);
-                rps.used_by_curr_pic_s0_flags.push(bs.get()?);
+                rps.delta_poc_s0.push(bs.read_ue()? + 1);
+                rps.used_by_curr_pic_s0_flags.push(bs.read_bit()?);
             }
 
             for _ in 0..rps.num_positive_pics {
-                rps.delta_poc_s1.push(bs.get_ue()? + 1);
-                rps.used_by_curr_pic_s1_flags.push(bs.get()?);
+                rps.delta_poc_s1.push(bs.read_ue()? + 1);
+                rps.used_by_curr_pic_s1_flags.push(bs.read_bit()?);
             }
         }
 

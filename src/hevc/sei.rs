@@ -26,7 +26,7 @@ impl SeiMessage {
         // forbidden_zero_bit
         reader.skip_n(1)?;
 
-        let nal_type = reader.get_n::<u8>(6)?;
+        let nal_type = reader.read::<6, u8>()?;
 
         if nal_type != NAL_SEI_PREFIX && nal_type != NAL_SEI_SUFFIX {
             bail!("NAL type {} is not SEI", nal_type);
@@ -53,30 +53,30 @@ impl SeiMessage {
 
     fn parse_sei_message(reader: &mut BsIoSliceReader) -> Result<SeiMessage> {
         let mut msg = SeiMessage {
-            msg_offset: (reader.position()? / 8) as usize,
-            last_payload_type_byte: reader.get_n(8)?,
+            msg_offset: (reader.position_in_bits()? / 8) as usize,
+            last_payload_type_byte: reader.read::<8, u8>()?,
             ..Default::default()
         };
 
         while msg.last_payload_type_byte == 0xFF {
             msg.num_payload_type_ff_bytes += 1;
-            msg.last_payload_type_byte = reader.get_n(8)?;
+            msg.last_payload_type_byte = reader.read::<8, u8>()?;
 
             msg.payload_type += 255;
         }
 
         msg.payload_type += msg.last_payload_type_byte;
 
-        msg.last_payload_size_byte = reader.get_n(8)?;
+        msg.last_payload_size_byte = reader.read::<8, u8>()?;
         while msg.last_payload_size_byte == 0xFF {
             msg.num_payload_size_ff_bytes += 1;
-            msg.last_payload_size_byte = reader.get_n(8)?;
+            msg.last_payload_size_byte = reader.read::<8, u8>()?;
 
             msg.payload_size += 255;
         }
 
         msg.payload_size += msg.last_payload_size_byte as usize;
-        msg.payload_offset = (reader.position()? / 8) as usize;
+        msg.payload_offset = (reader.position_in_bits()? / 8) as usize;
 
         if msg.payload_size > reader.available()? as usize {
             bail!("Payload size is larger than NALU size");

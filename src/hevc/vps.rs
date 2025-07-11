@@ -29,23 +29,23 @@ pub struct VPSNAL {
 impl VPSNAL {
     pub fn parse(bs: &mut BsIoVecReader) -> Result<VPSNAL> {
         let mut vps = VPSNAL {
-            vps_id: bs.get_n(4)?,
+            vps_id: bs.read::<4, u8>()?,
             ..Default::default()
         };
 
         // vps_reserved_three_2bits
-        assert!(bs.get_n::<u8>(2)? == 3);
+        assert!(bs.read::<2, u8>()? == 3);
 
-        vps.vps_max_layers = bs.get_n::<u8>(6)? + 1;
-        vps.vps_max_sub_layers = bs.get_n::<u8>(3)? + 1;
-        vps.vps_temporal_id_nesting_flag = bs.get()?;
+        vps.vps_max_layers = bs.read::<6, u8>()? + 1;
+        vps.vps_max_sub_layers = bs.read::<3, u8>()? + 1;
+        vps.vps_temporal_id_nesting_flag = bs.read_bit()?;
 
         // vps_reserved_ffff_16bits
-        assert!(bs.get_n::<u32>(16)? == 0xFFFF);
+        assert!(bs.read::<16, u16>()? == 0xFFFF);
 
         vps.ptl.parse(bs, vps.vps_max_sub_layers)?;
 
-        vps.vps_sub_layer_ordering_info_present_flag = bs.get()?;
+        vps.vps_sub_layer_ordering_info_present_flag = bs.read_bit()?;
 
         let i = if vps.vps_sub_layer_ordering_info_present_flag {
             0
@@ -54,17 +54,17 @@ impl VPSNAL {
         };
 
         for _ in i..vps.vps_max_sub_layers {
-            vps.vps_max_dec_pic_buffering.push(bs.get_ue()? + 1);
-            vps.vps_num_reorder_pics.push(bs.get_ue()?);
+            vps.vps_max_dec_pic_buffering.push(bs.read_ue()? + 1);
+            vps.vps_num_reorder_pics.push(bs.read_ue()?);
 
-            let mut vps_max_latency_increase = bs.get_ue()?;
+            let mut vps_max_latency_increase = bs.read_ue()?;
             vps_max_latency_increase = vps_max_latency_increase.saturating_sub(1);
 
             vps.vps_max_latency_increase.push(vps_max_latency_increase);
         }
 
-        vps.vps_max_layer_id = bs.get_n(6)?;
-        vps.vps_num_layer_sets = bs.get_ue()? + 1;
+        vps.vps_max_layer_id = bs.read::<6, u8>()?;
+        vps.vps_num_layer_sets = bs.read_ue()? + 1;
 
         for _ in 1..vps.vps_num_layer_sets {
             for _ in 0..=vps.vps_max_layer_id {
@@ -72,25 +72,25 @@ impl VPSNAL {
             }
         }
 
-        vps.vps_timing_info_present_flag = bs.get()?;
+        vps.vps_timing_info_present_flag = bs.read_bit()?;
 
         if vps.vps_timing_info_present_flag {
-            vps.vps_num_units_in_tick = bs.get_n(32)?;
-            vps.vps_time_scale = bs.get_n(32)?;
-            vps.vps_poc_proportional_to_timing_flag = bs.get()?;
+            vps.vps_num_units_in_tick = bs.read::<32, u32>()?;
+            vps.vps_time_scale = bs.read::<32, u32>()?;
+            vps.vps_poc_proportional_to_timing_flag = bs.read_bit()?;
 
             if vps.vps_poc_proportional_to_timing_flag {
-                vps.vps_num_ticks_poc_diff_one = bs.get_ue()? + 1;
+                vps.vps_num_ticks_poc_diff_one = bs.read_ue()? + 1;
             }
 
-            vps.vps_num_hrd_parameters = bs.get_ue()?;
+            vps.vps_num_hrd_parameters = bs.read_ue()?;
 
             for i in 0..vps.vps_num_hrd_parameters {
                 let mut common_inf_present = false;
-                bs.get_ue()?; // hrd_layer_set_idx
+                bs.read_ue()?; // hrd_layer_set_idx
 
                 if i > 0 {
-                    common_inf_present = bs.get()?;
+                    common_inf_present = bs.read_bit()?;
                 }
 
                 HrdParameters::parse(bs, common_inf_present, vps.vps_max_sub_layers)?;

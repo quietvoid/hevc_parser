@@ -28,7 +28,7 @@ impl SliceNAL {
         poc: &mut u64,
     ) -> Result<SliceNAL> {
         let mut slice = SliceNAL {
-            first_slice_in_pic_flag: bs.get()?,
+            first_slice_in_pic_flag: bs.read_bit()?,
             ..Default::default()
         };
 
@@ -37,7 +37,7 @@ impl SliceNAL {
             bs.skip_n(1)?; // no_output_of_prior_pics_flag
         }
 
-        slice.pps_id = bs.get_ue()?;
+        slice.pps_id = bs.read_ue()?;
         let pps = pps_list
             .get(slice.pps_id as usize)
             .ok_or_else(|| format_err!("Invalid PPS index"))?;
@@ -47,7 +47,7 @@ impl SliceNAL {
 
         if !slice.first_slice_in_pic_flag {
             if pps.dependent_slice_segments_enabled_flag {
-                slice.dependent_slice_segment_flag = bs.get()?;
+                slice.dependent_slice_segment_flag = bs.read_bit()?;
             } else {
                 slice.dependent_slice_segment_flag = false;
             }
@@ -55,7 +55,7 @@ impl SliceNAL {
             let pic_size = (sps.ctb_width * sps.ctb_height) as f64;
             let slice_address_length = pic_size.log2().ceil() as u32;
 
-            slice.slice_segment_addr = bs.get_n(slice_address_length)?;
+            slice.slice_segment_addr = bs.read_var(slice_address_length)?;
         } else {
             slice.dependent_slice_segment_flag = false;
         }
@@ -68,7 +68,7 @@ impl SliceNAL {
             bs.skip_n(1)?; // slice_reserved_undetermined_flag
         }
 
-        slice.slice_type = bs.get_ue()?;
+        slice.slice_type = bs.read_ue()?;
 
         if pps.output_flag_present_flag {
             bs.skip_n(1)?;
@@ -79,7 +79,7 @@ impl SliceNAL {
         }
 
         if !is_idr_nal(nal) {
-            slice.pic_order_cnt_lsb = bs.get_n(sps.log2_max_poc_lsb as u32)?;
+            slice.pic_order_cnt_lsb = bs.read_var(sps.log2_max_poc_lsb as u32)?;
             slice.output_picture_number = compute_poc(sps, *poc_tid0, slice.pic_order_cnt_lsb, nal);
         } else {
             slice.output_picture_number = 0;

@@ -55,82 +55,82 @@ pub struct VuiParameters {
 impl VuiParameters {
     pub fn parse(bs: &mut BsIoVecReader, max_sub_layers: u8) -> Result<VuiParameters> {
         let mut vui = VuiParameters {
-            sar_present: bs.get()?,
+            sar_present: bs.read_bit()?,
             ..Default::default()
         };
 
         if vui.sar_present {
-            vui.sar_idx = bs.get_n(8)?;
+            vui.sar_idx = bs.read::<8, u8>()?;
 
             if vui.sar_idx == 255 {
-                vui.sar_num = bs.get_n(16)?;
-                vui.sar_den = bs.get_n(16)?;
+                vui.sar_num = bs.read::<16, u16>()?;
+                vui.sar_den = bs.read::<16, u16>()?;
             }
         }
 
-        vui.overscan_info_present_flag = bs.get()?;
+        vui.overscan_info_present_flag = bs.read_bit()?;
         if vui.overscan_info_present_flag {
-            vui.overscan_appropriate_flag = bs.get()?;
+            vui.overscan_appropriate_flag = bs.read_bit()?;
         }
 
-        vui.video_signal_type_present_flag = bs.get()?;
+        vui.video_signal_type_present_flag = bs.read_bit()?;
         if vui.video_signal_type_present_flag {
-            vui.video_format = bs.get_n(3)?;
-            vui.video_full_range_flag = bs.get()?;
-            vui.colour_description_present_flag = bs.get()?;
+            vui.video_format = bs.read::<3, u8>()?;
+            vui.video_full_range_flag = bs.read_bit()?;
+            vui.colour_description_present_flag = bs.read_bit()?;
 
             if vui.colour_description_present_flag {
-                vui.colour_primaries = bs.get_n(8)?;
-                vui.transfer_characteristic = bs.get_n(8)?;
-                vui.matrix_coeffs = bs.get_n(8)?;
+                vui.colour_primaries = bs.read::<8, u8>()?;
+                vui.transfer_characteristic = bs.read::<8, u8>()?;
+                vui.matrix_coeffs = bs.read::<8, u8>()?;
             }
         }
 
-        vui.chroma_loc_info_present_flag = bs.get()?;
+        vui.chroma_loc_info_present_flag = bs.read_bit()?;
         if vui.chroma_loc_info_present_flag {
-            vui.chroma_sample_loc_type_top_field = bs.get_ue()?;
-            vui.chroma_sample_loc_type_bottom_field = bs.get_ue()?;
+            vui.chroma_sample_loc_type_top_field = bs.read_ue()?;
+            vui.chroma_sample_loc_type_bottom_field = bs.read_ue()?;
         }
 
-        vui.neutral_chroma_indication_flag = bs.get()?;
-        vui.field_seq_flag = bs.get()?;
-        vui.frame_field_info_present_flag = bs.get()?;
-        vui.default_display_window_flag = bs.get()?;
+        vui.neutral_chroma_indication_flag = bs.read_bit()?;
+        vui.field_seq_flag = bs.read_bit()?;
+        vui.frame_field_info_present_flag = bs.read_bit()?;
+        vui.default_display_window_flag = bs.read_bit()?;
 
         if vui.default_display_window_flag {
-            vui.def_disp_win_left_offset = bs.get_ue()?;
-            vui.def_disp_win_right_offset = bs.get_ue()?;
-            vui.def_disp_win_top_offset = bs.get_ue()?;
-            vui.def_disp_win_bottom_offset = bs.get_ue()?;
+            vui.def_disp_win_left_offset = bs.read_ue()?;
+            vui.def_disp_win_right_offset = bs.read_ue()?;
+            vui.def_disp_win_top_offset = bs.read_ue()?;
+            vui.def_disp_win_bottom_offset = bs.read_ue()?;
         }
 
-        vui.vui_timing_info_present_flag = bs.get()?;
+        vui.vui_timing_info_present_flag = bs.read_bit()?;
         if vui.vui_timing_info_present_flag {
-            vui.vui_num_units_in_tick = bs.get_n(32)?;
-            vui.vui_time_scale = bs.get_n(32)?;
+            vui.vui_num_units_in_tick = bs.read::<32, u32>()?;
+            vui.vui_time_scale = bs.read::<32, u32>()?;
 
-            vui.vui_poc_proportional_to_timing_flag = bs.get()?;
+            vui.vui_poc_proportional_to_timing_flag = bs.read_bit()?;
             if vui.vui_poc_proportional_to_timing_flag {
-                vui.vui_num_ticks_poc_diff_one_minus1 = bs.get_ue()?;
+                vui.vui_num_ticks_poc_diff_one_minus1 = bs.read_ue()?;
             }
 
-            vui.vui_hrd_parameters_present_flag = bs.get()?;
+            vui.vui_hrd_parameters_present_flag = bs.read_bit()?;
             if vui.vui_hrd_parameters_present_flag {
                 HrdParameters::parse(bs, true, max_sub_layers)?;
             }
         }
 
-        vui.bitstream_restriction_flag = bs.get()?;
+        vui.bitstream_restriction_flag = bs.read_bit()?;
         if vui.bitstream_restriction_flag {
-            vui.tiles_fixed_structure_flag = bs.get()?;
-            vui.motion_vectors_over_pic_boundaries_flag = bs.get()?;
-            vui.restricted_ref_pic_lists_flag = bs.get()?;
+            vui.tiles_fixed_structure_flag = bs.read_bit()?;
+            vui.motion_vectors_over_pic_boundaries_flag = bs.read_bit()?;
+            vui.restricted_ref_pic_lists_flag = bs.read_bit()?;
 
-            vui.min_spatial_segmentation_idc = bs.get_ue()?;
-            vui.max_bytes_per_pic_denom = bs.get_ue()?;
-            vui.max_bits_per_min_cu_denom = bs.get_ue()?;
-            vui.log2_max_mv_length_horizontal = bs.get_ue()?;
-            vui.log2_max_mv_length_vertical = bs.get_ue()?;
+            vui.min_spatial_segmentation_idc = bs.read_ue()?;
+            vui.max_bytes_per_pic_denom = bs.read_ue()?;
+            vui.max_bits_per_min_cu_denom = bs.read_ue()?;
+            vui.log2_max_mv_length_horizontal = bs.read_ue()?;
+            vui.log2_max_mv_length_vertical = bs.read_ue()?;
         }
 
         Ok(vui)

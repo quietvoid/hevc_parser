@@ -57,16 +57,16 @@ pub fn aud_for_frame(frame: &Frame, start_code: Option<NALUStartCode>) -> Result
 
     let mut writer = BitstreamIoWriter::with_capacity(24);
 
-    writer.write(false)?; // forbidden_zero_bit
+    writer.write_bit(false)?; // forbidden_zero_bit
 
-    writer.write_n(&NAL_AUD, 6)?; // nal_unit_type
-    writer.write_n(&0_u8, 6)?; // nuh_layer_id
-    writer.write_n(&1_u8, 3)?; // nuh_temporal_id_plus1
+    writer.write::<6, u8>(NAL_AUD)?; // nal_unit_type
+    writer.write_const::<6, 0>()?; // nuh_layer_id
+    writer.write_const::<3, 1>()?; // nuh_temporal_id_plus1
 
-    writer.write_n(&pic_type, 3)?; // pic_type
+    writer.write::<3, u8>(pic_type)?; // pic_type
 
     // rbsp_trailing_bits()
-    writer.write(true)?; // rbsp_stop_one_bit
+    writer.write_bit(true)?; // rbsp_stop_one_bit
 
     // rbsp_alignment_zero_bit
     writer.byte_align()?;
