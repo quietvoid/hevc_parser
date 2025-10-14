@@ -78,7 +78,7 @@ pub fn format_from_path(input: &Path) -> Result<IoFormat> {
         }
     } else if file_name.is_empty() {
         bail!("Missing input.")
-    } else if !input.is_file() {
+    } else if !input.try_exists().is_ok_and(|v| v) {
         bail!("Input file doesn't exist.")
     } else {
         bail!("Invalid input file type.")
