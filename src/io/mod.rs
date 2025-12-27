@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Result, bail, format_err};
-use regex::Regex;
+use regex_lite::Regex;
 
 pub mod processor;
 
