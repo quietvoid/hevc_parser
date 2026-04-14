@@ -1,6 +1,6 @@
 [package]
 name = "hevc_parser"
-version = "0.6.10"
+version = "0.6.11"
 authors = ["quietvoid"]
 edition = "2024"
 rust-version = "1.85.0"
@@ -10,9 +10,9 @@ repository = "https://github.com/quietvoid/hevc_parser"
 
 [dependencies]
 nom = "8.0.0"
-bitvec_helpers = { version = "4.0.1", default-features = false, features = ["bitstream-io"] }
-anyhow = "1.0.100"
-regex-lite = { version = "0.1.8", optional = true }
+bitvec_helpers = { version = "4.0.2", default-features = false, features = ["bitstream-io"] }
+anyhow = "1.0.102"
+regex-lite = { version = "0.1.9", optional = true }
 
 # Matroska support
 matroska-demuxer = { version = "0.7.0", optional = true }
