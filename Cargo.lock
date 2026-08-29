@@ -28,7 +28,7 @@ dependencies = [
 
 [[package]]
 name = "hevc_parser"
-version = "0.6.11"
+version = "0.6.12"
 dependencies = [
  "anyhow",
  "bitvec_helpers",

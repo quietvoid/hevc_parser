@@ -6,6 +6,7 @@ use std::{
 use anyhow::{Result, bail, format_err};
 use regex_lite::Regex;
 
+pub(crate) mod matroska;
 pub mod processor;
 
 use super::{HevcParser, NALUStartCode, NALUnit, hevc::*};

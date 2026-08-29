@@ -1,6 +1,6 @@
 [package]
 name = "hevc_parser"
-version = "0.6.11"
+version = "0.6.12"
 authors = ["quietvoid"]
 edition = "2024"
 rust-version = "1.85.0"

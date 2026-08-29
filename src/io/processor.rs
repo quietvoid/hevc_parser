@@ -6,11 +6,11 @@ use std::{
 
 use anyhow::{Result, bail, ensure};
 use bitvec_helpers::bitstream_io_reader::BsIoSliceReader;
-use matroska_demuxer::{MatroskaFile, TrackType};
+use matroska_demuxer::MatroskaFile;
 
 use crate::{MAX_PARSE_SIZE, NALUStartCode, config::HEVCDecoderConfigurationRecord, hevc::NALUnit};
 
-use super::{HevcParser, IoFormat, IoProcessor};
+use super::{HevcParser, IoFormat, IoProcessor, matroska::is_hevc_video_track};
 
 /// Base HEVC stream processor
 pub struct HevcProcessor {
@@ -44,6 +44,16 @@ pub struct HevcProcessorOpts {
     /// Stop reading the stream after N frames
     /// The number of processed frames may differ.
     pub limit: Option<u64>,
+
+    /// Container specific options
+    pub container_opts: Option<ContainerProcessorOpts>,
+}
+
+#[derive(Default)]
+pub struct ContainerProcessorOpts {
+    /// Track number/ID to use
+    ///   - Matroska: track number starting at 1
+    pub track_number: Option<usize>,
 }
 
 impl HevcProcessor {
@@ -220,15 +230,33 @@ impl HevcProcessor {
 
     fn process_matroska_file(&mut self, processor: &mut dyn IoProcessor, file: File) -> Result<()> {
         let mut mkv = MatroskaFile::open(file)?;
-        let track = mkv
-            .tracks()
-            .iter()
-            .find(|t| t.track_type() == TrackType::Video && t.codec_id() == "V_MPEGH/ISO/HEVC");
+
+        let requested_track_number = self
+            .opts
+            .container_opts
+            .as_ref()
+            .and_then(|e| e.track_number);
+        let track = if let Some(track_number) = requested_track_number {
+            let requested_track = mkv
+                .tracks()
+                .iter()
+                .find(|t| t.track_number().get() == track_number as u64);
+
+            if requested_track.is_none() {
+                bail!("No track found for ID {track_number}");
+            } else if requested_track.is_some_and(|t| !is_hevc_video_track(t)) {
+                bail!("Requested track ID is not an HEVC video track");
+            }
+
+            requested_track
+        } else {
+            mkv.tracks().iter().find(|t| is_hevc_video_track(t))
+        };
 
         ensure!(track.is_some(), "No HEVC video track found in file");
 
         let track = track.unwrap();
-        let track_id = track.track_number().get();
+        let track_number = track.track_number().get();
 
         let config = if let Some(codec_private) = track.codec_private() {
             let mut bs = BsIoSliceReader::from_slice(codec_private);
@@ -247,7 +275,7 @@ impl HevcProcessor {
         while let Ok(res) = mkv.next_frame(&mut frame) {
             if !res {
                 break;
-            } else if frame.track != track_id {
+            } else if frame.track != track_number {
                 continue;
             }
 
@@ -325,6 +353,7 @@ impl Default for HevcProcessorOpts {
             buffer_frame: false,
             parse_nals: true,
             limit: Default::default(),
+            container_opts: Default::default(),
         }
     }
 }
