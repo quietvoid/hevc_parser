@@ -380,7 +380,7 @@ impl HevcParser {
     }
 
     pub fn display(&self) {
-        println!("{} frames", &self.ordered_frames.len());
+        println!("{} frames", self.ordered_frames.len());
         for frame in &self.ordered_frames {
             let pict_type = match frame.frame_type {
                 2 => "I",
