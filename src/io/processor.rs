@@ -44,6 +44,8 @@ pub struct HevcProcessorOpts {
     /// Stop reading the stream after N frames
     /// The number of processed frames may differ.
     pub limit: Option<u64>,
+    /// Matroska track number to process.
+    pub track: Option<u64>,
 }
 
 impl HevcProcessor {
@@ -223,7 +225,10 @@ impl HevcProcessor {
         let track = mkv
             .tracks()
             .iter()
-            .find(|t| t.track_type() == TrackType::Video && t.codec_id() == "V_MPEGH/ISO/HEVC");
+            .find(|t| { t.track_type() == TrackType::Video
+                && t.codec_id() == "V_MPEGH/ISO/HEVC"
+                && self.opts.track.is_none_or(|track| t.track_number().get() == track)
+            });
 
         ensure!(track.is_some(), "No HEVC video track found in file");
 
@@ -325,6 +330,7 @@ impl Default for HevcProcessorOpts {
             buffer_frame: false,
             parse_nals: true,
             limit: Default::default(),
+            track: Default::default(),
         }
     }
 }
